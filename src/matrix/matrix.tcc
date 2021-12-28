@@ -1,7 +1,4 @@
 #pragma once
-#include <vector>
-#include <array>
-#include <iostream>
 
 
 // Matrix Constructor
@@ -18,9 +15,18 @@ mpJDQMR::Matrix<fp>::Matrix(std::vector<fp> *Vals, std::vector<int> *Rows, std::
 
 // csr implementation of y = Ax
 template <class fp>
-void mpJDQMR::Matrix<fp>::matVec(std::vector<fp> *x, int ldx, std::vector<fp> *y, int ldy, int dimBlock){
+void mpJDQMR::Matrix<fp>::matVec(fp *x, int ldx, fp *y, int ldy, int dimBlock){
 
-/*
+
+	fp *xx = x;//->data();
+	fp *yy = y;//->data();
+
+	fp *vals = m_vec_VALS->data();
+	int *rows = m_vec_ROW_INDEX->data();
+	int *cols = m_vec_COL_INDEX->data();
+
+/* Algorithm implemented 
+	
 	for i = 0:n+1 
        y(i)  = 0 
        for j = row_ptr(i):row_ptr(i+1) 
@@ -28,15 +34,16 @@ void mpJDQMR::Matrix<fp>::matVec(std::vector<fp> *x, int ldx, std::vector<fp> *y
        end;
    end;
 */
-
-	for(auto i=0; i < m_dim+1; i++){
-		y->at(i) = 0;
-		for(auto j = m_vec_ROW_INDEX->at(i); j < m_vec_ROW_INDEX->at(i+1); j++){
-				y->at(i) = y->at(i) + m_vec_VALS->at(j)*(x->at(m_vec_COL_INDEX->at(j)));
+	for(auto k=0; k<dimBlock; k++){
+		for(auto i=0; i < m_dim+1; i++){
+			yy[i+k*ldy] = 0;
+			for(auto j = rows[i]; j < rows[i+1]; j++){
+					yy[i+k*ldy] = yy[i+k*ldy] + vals[j]*(xx[cols[j]+k*ldx]);
+			}
 		}
+
 	}
 
-
 }
-
-
+template<class fp>
+int mpJDQMR::Matrix<fp>::Dim(){return m_dim;}

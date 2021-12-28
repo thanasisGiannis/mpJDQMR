@@ -1,15 +1,9 @@
 #include <iostream>
 #include <string>
-#include "matrix.h"
 #include <iterator>
+#include "matrix.h"
+#include "jd.h"
 
-template <class fp>
-void printVec	(std::vector<fp> vec, std::string s){
-	std::cout << s << std::endl;
-	for(auto v = vec.begin(); v!=vec.end(); v++){
-		std::cout << *v << std::endl;
-	}
-}
 
 using namespace mpJDQMR;
 int main(){
@@ -26,9 +20,17 @@ int main(){
 	
 	
 	
-	Matrix<double> mat{&vals,&rows,&cols};
-	mat.matVec(&x,3,&y,3,1);
+	Matrix<double> *mat = new Matrix<double>{&vals,&rows,&cols};
+	
+	JD<double,double> *jd = new JD<double,double>(mat, mat->Dim(), 2, 15,1);
+	jd->eigenSolve();
+	
+	mat->matVec(x.data(),3,y.data(),3,1);
+	
 	
 	printVec(x,"x");
 	printVec(y,"y");	
+
+	delete mat;
+	delete jd;
 }
