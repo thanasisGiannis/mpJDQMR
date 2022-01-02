@@ -7,5 +7,5 @@ set(MKLROOT ls /opt/intel/oneapi/mkl/latest/)
 find_package(MKL CONFIG REQUIRED)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/examples)
 
