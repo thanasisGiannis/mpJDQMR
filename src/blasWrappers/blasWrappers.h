@@ -20,6 +20,12 @@ public:
 
 	std::string getTarget();
 	
+	void gemm(char transa, char  transb, 
+						int m, int n, int k,
+						double alpha,double* a, int  lda,
+						double* b, int  ldb,
+						double beta, double* c,int ldc);
+						
 	double dot(int dim, double *x, int incx, double *y, int incy);
 	void axpy(int dim, double alpha, double *x, int incx, double *y, int incy);
 	double nrm2(int dim, double *x,int incx);

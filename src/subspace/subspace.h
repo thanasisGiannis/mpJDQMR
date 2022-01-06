@@ -42,9 +42,13 @@ public:
 				 std::vector<fp> &Rlocked_, int &ldRlocked_);
 
 	
-	void Subspace_init();
-	void Subspace_orth_basis();
-	void Subspace_orth_basis(std::vector<fp> v);
+//	void Subspace_init();
+
+	void Subspace_init_direction();
+	void Subspace_orth_direction();
+	void Subpsace_project_at_new_direction();
+	
+//	void Subspace_orth_basis();
 	void Subspace_update_basis(std::vector<fp> v);
 };
 
