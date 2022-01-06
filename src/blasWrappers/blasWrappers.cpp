@@ -65,6 +65,23 @@ void mpjd::LinearAlgebra::scal(int dim, double alpha, double *x, int incx){
 
 }
 
+
+void mpjd::LinearAlgebra::eig(int n, double* a, int  lda,int numEvals, eigenTarget_t target){
+
+std::cout << "eig()" << std::endl;
+/*
+	lapache_dsyev('V','U',
+integer 	N,
+double precision, dimension( lda, * ) 	A,
+integer 	LDA,
+double precision, dimension( * ) 	W,
+double precision, dimension( * ) 	WORK,
+integer 	LWORK,
+integer 	INFO 
+)	
+*/
+}
+
 std::string mpjd::LinearAlgebra::getTarget(){
 	if(target == target_t::HOST){
 		return "HOST";

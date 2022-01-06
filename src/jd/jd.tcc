@@ -11,7 +11,7 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_, std::vector<int> row_index_, std::ve
 	la(target_),
 	mat(vals_, row_index_, col_index_, dim_, DS_, la),
 	numEvals(nEvals),
-	basis(Subspace<fp>(mat, dim_, nEvals, maxBasis_,la,w,ldw, 
+	basis(Subspace<fp>(mat, dim_, nEvals,eigTarget_, maxBasis_,la,w,ldw, 
 											Q,ldQ,L,R,ldR,
 											Qlocked,ldQlocked,Llocked,Rlocked,ldRlocked)),
 	eigTarget(eigTarget_)

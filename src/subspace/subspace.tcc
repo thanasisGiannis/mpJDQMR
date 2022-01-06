@@ -17,7 +17,7 @@ void init_vec_zeros(std::vector<fp> &v, int nVals){
 
 
 template<class fp>
-mpjd::Subspace<fp>::	Subspace(Matrix<fp> &mat_, int dim_,int numEvals_,int maxBasis_, LinearAlgebra &la_,
+mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarget_t eigTarget_, int maxBasis_, LinearAlgebra &la_,
 				 std::vector<fp> &w_, int &ldw_,	
 				 std::vector<fp> &Q_, int &ldQ_, std::vector<fp> &L_, 
 				 std::vector<fp> &R_, int &ldR_, 
@@ -29,6 +29,7 @@ mpjd::Subspace<fp>::	Subspace(Matrix<fp> &mat_, int dim_,int numEvals_,int maxBa
 	mat(mat_),
 	dim(dim_),
 	numEvals(numEvals_),
+	eigTarget(eigTarget_),
 	maxBasis(maxBasis_),
 	blockSize(numEvals_),
 	basisSize(0),
@@ -49,15 +50,18 @@ mpjd::Subspace<fp>::	Subspace(Matrix<fp> &mat_, int dim_,int numEvals_,int maxBa
 	T.reserve(maxBasis*numEvals*maxBasis*numEvals); ldT = maxBasis*numEvals;// projected matrix
 	init_vec_zeros(T,maxBasis*numEvals*maxBasis*numEvals);
 	
+	q.reserve(maxBasis*numEvals*numEvals); ldq = maxBasis*numEvals; // eigenvectors of T
+	init_vec_zeros(q,maxBasis*numEvals*numEvals);
+
 	Q.reserve(dim*numEvals); ldQ = dim; // locked eigenvectors
-//	init_vec_zeros(Q,dim*numEvals);
+	init_vec_zeros(Q,dim*numEvals);
 
 	L.reserve(numEvals); 				        // locked eigenvalues
-//	init_vec_zeros(L,numEvals);
+	init_vec_zeros(L,numEvals);
 
 
 	R.reserve(dim*numEvals); ldR = dim; // eigen residual 
-//	init_vec_zeros(R,dim*numEvals);
+	init_vec_zeros(R,dim*numEvals);
 
 	Qlocked.reserve(dim*numEvals); ldQlocked = dim; // locked eigenvectors
 //	init_vec_zeros(Qlocked,dim*numEvals);
@@ -69,6 +73,8 @@ mpjd::Subspace<fp>::	Subspace(Matrix<fp> &mat_, int dim_,int numEvals_,int maxBa
 	
 	Aw.reserve(dim*numEvals); ldAw = dim;  // tmp vector to used in Av
 	init_vec_zeros<fp>(Aw,dim*numEvals);
+
+	AV.reserve(dim*numEvals*maxBasis); ldAV = dim;
 
 	w.reserve(dim*numEvals);  ldw  = dim;  // new subspace direction
 	
@@ -130,7 +136,6 @@ void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
 	std::cout << name << std::endl;
 	
 	for(auto i=0;i<rows;i++){	
-	
 		for(auto j=0;j<cols; j++){
 			std::cout << "\% " << name << "("<< i << "," << j << ")=" << A_[i+j*ldA] << "        ";
 		}
@@ -140,9 +145,12 @@ void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
 
 
 template<class fp>
-void mpjd::Subspace<fp>::Subpsace_project_at_new_direction(){
-	mat.matVec(w,ldw, Aw, ldAw, blockSize); // Aw = A*w
-	
+void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
+
+
+	mat.matVec(w,ldw, Aw, ldAw, blockSize);     // Aw  = A*w
+	AV.insert(AV.end(), Aw.begin() , Aw.end()); // [AV = [AV Aw]
+
 	fp *Aw_ = Aw.data();
 	fp *w_  =  w.data();
 	fp *T_  =  T.data();
@@ -157,6 +165,7 @@ void mpjd::Subspace<fp>::Subpsace_project_at_new_direction(){
 	la.gemm('T','N', blockSize, blockSize, dim, one, w_, ldw,
 						Aw_, ldAw, zero, &T_[basisSize*blockSize + basisSize*blockSize*ldT],ldT);	
 						
+					
 	/* only the diagonal part is of interest */					
 	if(basisSize < 1) return;
 							
@@ -173,8 +182,20 @@ void mpjd::Subspace<fp>::Subpsace_project_at_new_direction(){
 						V_, ldV, zero, &T_[(basisSize+1)*blockSize + basisSize*blockSize*ldT],ldT);	
 }
 
+template<class fp> 
+void mpjd::Subspace<fp>::Subspace_update_basis(){
+	// V = [V w]
+	V.insert(V.end(), w.begin() , w.end());
+	basisSize+=1;
+}
+
+
 template<class fp>
-void mpjd::Subspace<fp>::Subspace_update_basis(std::vector<fp> v){}
+void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
+	
+	la.eig((basisSize+1)*blockSize, T.data() , ldT, numEvals, eigTarget);
+
+}
 
 
 

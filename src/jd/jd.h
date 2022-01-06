@@ -8,15 +8,6 @@
 
 namespace mpjd{
 
-enum class eigenTarget_t {
-							/* Target of wanted eigenvalues */
-							SM // smallest by absolute value
-							/* future implementations */
-							//BM // bigest by absolute value 
-							//SR // smallest real
-							//BR // bigest real
-							
-						};
 
 
 template<class fp, class sfp>

@@ -3,6 +3,16 @@
 #include <string>
 namespace mpjd {
 
+enum class eigenTarget_t {
+							/* Target of wanted eigenvalues */
+							SM // smallest by absolute value
+							/* future implementations */
+							//BM // bigest by absolute value 
+							//SR // smallest real
+							//BR // bigest real
+							
+						};
+
 enum class target_t
 		 {  
 		 		// following future targets 
@@ -30,8 +40,8 @@ public:
 	void axpy(int dim, double alpha, double *x, int incx, double *y, int incy);
 	double nrm2(int dim, double *x,int incx);
 	void scal(int dim, double alpha, double *x, int incx);
-
-
+	void eig(int n, double *a, int  lda,int numEvals, eigenTarget_t target);
+	
 };
 }
 //void dot();
