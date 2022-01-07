@@ -40,7 +40,7 @@ public:
 	void axpy(int dim, double alpha, double *x, int incx, double *y, int incy);
 	double nrm2(int dim, double *x,int incx);
 	void scal(int dim, double alpha, double *x, int incx);
-	void eig(int n, double *a, int  lda,int numEvals, eigenTarget_t target);
+	void eig(int n, double *a, int  lda, double *l, int numEvals, eigenTarget_t target);
 	
 };
 }

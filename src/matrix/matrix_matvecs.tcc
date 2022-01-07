@@ -34,10 +34,11 @@ void mpjd::Matrix<fp>::matVec_COO(std::vector<fp> &x, int ldx,std::vector<fp> &y
 	fp  *vals = m_vec_VALS.data();
 	int *rows = m_vec_ROW_INDEX.data();
 	int *cols = m_vec_COL_INDEX.data();
-
+	std::fill(y.begin(), y.end(), 0);
+	
 	for(auto k=0;k<dimBlock;k++){
 		for(auto i=0;i<m_vec_VALS.size();i++){
-			yy[cols[i] + k*ldy] += vals[i]*xx[rows[i]+k*ldx];
+			yy[rows[i] + k*ldy] += vals[i]*xx[cols[i]+k*ldx];
 		}
 	}
 }
@@ -52,10 +53,10 @@ void mpjd::Matrix<fp>::matVec_COO(fp *x, int ldx,fp *y, int ldy, int dimBlock){
 	int *rows = m_vec_ROW_INDEX.data();
 	int *cols = m_vec_COL_INDEX.data();
 
-	std::cout << "[Matrix] " << dimBlock << std::endl;
+//	std::cout << "[Matrix] " << dimBlock << std::endl;
 	for(auto i=0;i<m_vec_VALS.size();i++){
 		for(auto k=0;k<dimBlock;k++){
-			yy[cols[i] + k*ldy] += vals[i]*xx[rows[i]+k*ldx];
+			yy[rows[i] + k*ldy] += vals[i]*xx[cols[i]+k*ldx];
 		}
 	}
 }

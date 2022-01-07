@@ -66,20 +66,10 @@ void mpjd::LinearAlgebra::scal(int dim, double alpha, double *x, int incx){
 }
 
 
-void mpjd::LinearAlgebra::eig(int n, double* a, int  lda,int numEvals, eigenTarget_t target){
+void mpjd::LinearAlgebra::eig(int n, double* a, int  lda,  double *l, int numEvals, eigenTarget_t target){
 
-std::cout << "eig()" << std::endl;
-/*
-	lapache_dsyev('V','U',
-integer 	N,
-double precision, dimension( lda, * ) 	A,
-integer 	LDA,
-double precision, dimension( * ) 	W,
-double precision, dimension( * ) 	WORK,
-integer 	LWORK,
-integer 	INFO 
-)	
-*/
+	//l should contains eigenvalues in descending order
+	LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', n, a, lda, l );
 }
 
 std::string mpjd::LinearAlgebra::getTarget(){

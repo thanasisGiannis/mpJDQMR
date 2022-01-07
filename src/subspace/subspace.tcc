@@ -6,6 +6,21 @@
 
 //#include "../include/helper.h"
 
+template<class fp> 
+void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
+	fp *A_ = A.data();
+	std::cout <<"%"<< name << std::endl;
+	
+//	std::cout << name << "[]" << std::endl;
+	for(auto i=0;i<rows;i++){	
+		for(auto j=0;j<cols; j++){
+			std::cout << name << "("<< i+1 << "," << j+1 << ")=" << A_[i+j*ldA] << "        " << std::endl;
+		}
+	}
+}
+
+
+
 template<class fp>
 void init_vec_zeros(std::vector<fp> &v, int nVals){
 
@@ -14,6 +29,7 @@ void init_vec_zeros(std::vector<fp> &v, int nVals){
 	}
 
 } 
+
 
 
 template<class fp>
@@ -52,7 +68,14 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarg
 	
 	q.reserve(maxBasis*numEvals*numEvals); ldq = maxBasis*numEvals; // eigenvectors of T
 	init_vec_zeros(q,maxBasis*numEvals*numEvals);
+	
+	qq.reserve(maxBasis*numEvals*maxBasis*numEvals); // buffer for syev
+	init_vec_zeros(qq,maxBasis*numEvals*maxBasis*numEvals);
 
+	LL.reserve(maxBasis*numEvals); // buffer for syev
+	init_vec_zeros(LL,maxBasis*numEvals);
+
+	
 	Q.reserve(dim*numEvals); ldQ = dim; // locked eigenvectors
 	init_vec_zeros(Q,dim*numEvals);
 
@@ -71,12 +94,12 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarg
 
 	Rlocked.reserve(dim*numEvals); ldRlocked = dim; // locked eigen residual 
 	
-	Aw.reserve(dim*numEvals); ldAw = dim;  // tmp vector to used in Av
-	init_vec_zeros<fp>(Aw,dim*numEvals);
+	Aw.reserve(dim*blockSize); ldAw = dim;  // tmp vector to used in Av
+	init_vec_zeros<fp>(Aw,dim*blockSize);
 
-	AV.reserve(dim*numEvals*maxBasis); ldAV = dim;
+	AV.reserve(dim*blockSize*maxBasis); ldAV = dim;
 
-	w.reserve(dim*numEvals);  ldw  = dim;  // new subspace direction
+	w.reserve(dim*blockSize);  ldw  = dim;  // new subspace direction
 	
 }
 
@@ -130,19 +153,6 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 
 }
 
-template<class fp> 
-void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
-	fp *A_ = A.data();
-	std::cout << name << std::endl;
-	
-	for(auto i=0;i<rows;i++){	
-		for(auto j=0;j<cols; j++){
-			std::cout << "\% " << name << "("<< i << "," << j << ")=" << A_[i+j*ldA] << "        ";
-		}
-		std::cout << std::endl;
-	}
-}
-
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
@@ -168,7 +178,6 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 					
 	/* only the diagonal part is of interest */					
 	if(basisSize < 1) return;
-							
 	/**
 		T = [	T V'Aw; 0 w'Aw]
 	**/
@@ -193,12 +202,73 @@ void mpjd::Subspace<fp>::Subspace_update_basis(){
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	
-	la.eig((basisSize+1)*blockSize, T.data() , ldT, numEvals, eigTarget);
+	
+	qq = T; // copy data values from T to qq 
+					// eig replaces QQ with eigenvectors of T
+
+	la.eig((basisSize+1)*blockSize, qq.data() , ldT, LL.data(), numEvals, eigTarget);
+
+	// eig returns ALL eigenpairs of T
+	// extract the wanted ones
+	// LL contains eigenvalues in descending order
+
+	L.clear(); // Clear previous
+	q.clear(); // 
+
+	auto LLstart_ = LL.begin();
+	auto LLend_   = LL.begin();
+	auto qqstart_  = qq.begin();
+	auto qqend_    = qq.begin();
+
+	switch(eigTarget){
+		case eigenTarget_t::SM:
+			LLstart_ += (basisSize)*blockSize-numEvals;
+			LLend_   += (basisSize)*blockSize;
+			qqstart_ += ((basisSize)*blockSize-numEvals)*ldq;
+			qqend_   += ((basisSize)*blockSize)*ldq;
+			break;
+		default:
+				exit(-1);
+	}
+
+
+	L.insert(L.end(), LLstart_ , LLend_);
+	q.insert(q.end(), qqstart_, qqend_);
+
 
 }
 
 
 
+template<class fp>
+void mpjd::Subspace<fp>::Subspace_eig_residual(){
+	// R = AV*q-Q*L
+	//std::cout << "Subspace_eig_residual()" << std::endl;
+	fp *AV_ = AV.data();
+	fp *q_  =  q.data();
+	fp *Q_  =  Q.data();
+	fp *L_  =  L.data();
+	fp *R_  =  R.data();
+	
+	fp one        = static_cast<fp>(1.0);
+	fp zero       = static_cast<fp>(0.0);
+	fp minus_one  = static_cast<fp>(-1.0);
+	
+	// R = Q
+	R = Q;
+	
+	// R = R*L = Q*L 
+	for(auto j=0; j<numEvals; j++){
+		la.scal(dim, L_[j], &R_[0+j*ldR], 1);
+	}
+	
+	// R = AV*q-R = AV*q-Q*L
+	la.gemm('N', 'N',dim, basisSize*blockSize, numEvals,
+						one, AV_, ldAV, q_, ldq, minus_one, R_, ldR);
+
+
+
+}
 
 
 

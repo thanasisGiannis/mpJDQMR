@@ -15,7 +15,9 @@ class Subspace {
 	
 	std::vector<fp> &Q; int &ldQ; // ritz vectors
 	std::vector<fp> q;  int  ldq; // eigenvectors of T
-	
+	std::vector<fp> qq; 					//buffer for syev() 
+	std::vector<fp> LL;						//buffer for syev()
+
 	std::vector<fp> &L; 					// ritz values
 	std::vector<fp> &R; int &ldR; // eigenresidual 
 	
@@ -47,12 +49,13 @@ public:
 				 std::vector<fp> &Rlocked_, int &ldRlocked_);
 
 	
-//	void Subspace_init();
 	void Subspace_init_direction();
 	void Subspace_orth_direction();
 	void Subspace_project_at_new_direction();
 	void Subspace_update_basis();
 	void Subspace_projected_mat_eig();
+	void Subspace_eig_residual();
+	
 };
 
 }
