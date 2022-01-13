@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <algorithm>
+#include <vector>
 #include <iterator>
 #include "../blasWrappers/blasWrappers.h"
 
@@ -9,7 +10,7 @@
 template<class fp> 
 void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
 	fp *A_ = A.data();
-	std::cout <<"%"<< name << std::endl;
+//	std::cout <<"%"<< name << std::endl;
 	
 //	std::cout << name << "[]" << std::endl;
 	for(auto i=0;i<rows;i++){	
@@ -69,7 +70,7 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarg
 	q.reserve(maxBasis*numEvals*numEvals); ldq = maxBasis*numEvals; // eigenvectors of T
 	init_vec_zeros(q,maxBasis*numEvals*numEvals);
 	
-	qq.reserve(maxBasis*numEvals*maxBasis*numEvals); // buffer for syev
+	qq.reserve(maxBasis*numEvals*maxBasis*numEvals); ldqq = maxBasis*numEvals; // buffer for syev
 	init_vec_zeros(qq,maxBasis*numEvals*maxBasis*numEvals);
 
 	LL.reserve(maxBasis*numEvals); // buffer for syev
@@ -175,20 +176,21 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 	la.gemm('T','N', blockSize, blockSize, dim, one, w_, ldw,
 						Aw_, ldAw, zero, &T_[basisSize*blockSize + basisSize*blockSize*ldT],ldT);	
 						
-					
 	/* only the diagonal part is of interest */					
 	if(basisSize < 1) return;
+
 	/**
 		T = [	T V'Aw; 0 w'Aw]
 	**/
 	la.gemm('T','N', blockSize, basisSize*blockSize, dim, one, V_, ldV,
-						Aw_, ldAw, zero, &T_[basisSize*blockSize + (basisSize+1)*blockSize*ldT],ldT);	
+						Aw_, ldAw, zero, &T_[basisSize*blockSize + ((basisSize-1)*blockSize)*ldT],ldT);	
 
 	/**
 		T = [	T V'Aw; w'AV w'Aw]
 	**/
 	la.gemm('T','N', blockSize, basisSize*blockSize, dim, one, Aw_, ldAw,
-						V_, ldV, zero, &T_[(basisSize+1)*blockSize + basisSize*blockSize*ldT],ldT);	
+						V_, ldV, zero, &T_[(basisSize-1)*blockSize + basisSize*blockSize*ldT],ldT);	
+
 }
 
 template<class fp> 
@@ -206,7 +208,11 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	qq = T; // copy data values from T to qq 
 					// eig replaces QQ with eigenvectors of T
 
-	la.eig((basisSize+1)*blockSize, qq.data() , ldT, LL.data(), numEvals, eigTarget);
+//	std::cout << "======" << std::endl;
+//	std::cout << qq.data() << std::endl << T.data() << std::endl;
+//	std::cout << *(qq.data()) << std::endl << *(T.data()) << std::endl;
+//	printMat(T,ldT,(basisSize+1)*blockSize,(basisSize+1)*blockSize,"T");
+	la.eig((basisSize+1)*blockSize, qq.data() , ldqq, LL.data(), numEvals, eigTarget);
 
 	// eig returns ALL eigenpairs of T
 	// extract the wanted ones
@@ -243,7 +249,7 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	// R = AV*q-Q*L
-	//std::cout << "Subspace_eig_residual()" << std::endl;
+//	std::cout << "Subspace_eig_residual()" << std::endl;
 	fp *AV_ = AV.data();
 	fp *q_  =  q.data();
 	fp *Q_  =  Q.data();
@@ -263,14 +269,69 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	}
 	
 	// R = AV*q-R = AV*q-Q*L
-	la.gemm('N', 'N',dim, basisSize*blockSize, numEvals,
+	la.gemm('N', 'N',dim, numEvals, basisSize*blockSize,
 						one, AV_, ldAV, q_, ldq, minus_one, R_, ldR);
 
 
+//std::cout << "~Subspace_eig_residual()" << std::endl;
 
 }
 
+template<class fp>
+void mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 
+	fp *R_ = R.data();
+	fp  rho{};
+	std::vector<int> conv_num{};
+	for(auto j=0;j<numEvals;j++){
+		rho = la.dot(dim,&R_[0+j*ldR],1,&R_[0+j*ldR],1); rho = sqrt(rho);
+		
+		if(rho < tol*mat.Norm()){
+			conv_num.push_back(j);
+		}
+		
+	}
+	
+	while(conv_num.size() != 0){
+			/* pop last element of conv as j*/
+			int j = conv_num.back();
+			conv_num.pop_back();		
+			/** 
+				 insert j-th vector to Q
+			*/
+			Rlocked.insert(Rlocked.end(),R.at(0+j*ldQ),R.at(0 + j*ldQ+dim-1));
+			Qlocked.insert(Qlocked.end(),Q.at(0+j*ldQ),Q.at(0 + j*ldQ+dim-1));
+			Llocked.insert(Llocked.end(),L.at(j),L.at(j));
+					
+			/**
+				  remove j-th vector from R
+			*/
+			R.erase(R.begin()+ (0+j*ldQ),R.begin() +(0 + j*ldQ+dim));
+			Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + j*ldQ+dim));
+			L.erase(L.begin() + j);
+			
+			lockedNumEvals++;
+			numEvals--;	
+	}	
+	
+};
+
+
+template<class fp>
+int mpjd::Subspace<fp>::getBasisSize(){return basisSize;}
+
+template<class fp>
+int mpjd::Subspace<fp>::getMaxBasisSize(){return maxBasis;}
+
+template<class fp>
+bool mpjd::Subspace<fp>::Converged(){
+	
+	if(numEvals <= 0){
+		return true;
+	}else{
+		return false;
+	}
+}
 
 
 

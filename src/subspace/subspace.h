@@ -13,10 +13,10 @@ class Subspace {
 	/* Next vectors are manipulated by JD class */
 	std::vector<fp> &w; 			int &ldw;			  // new subspace direction
 	
-	std::vector<fp> &Q; int &ldQ; // ritz vectors
-	std::vector<fp> q;  int  ldq; // eigenvectors of T
-	std::vector<fp> qq; 					//buffer for syev() 
-	std::vector<fp> LL;						//buffer for syev()
+	std::vector<fp> &Q; int &ldQ;  // ritz vectors
+	std::vector<fp> q;  int  ldq;  // eigenvectors of T
+	std::vector<fp> qq; int  ldqq; //buffer for syev() 
+	std::vector<fp> LL;						 //buffer for syev()
 
 	std::vector<fp> &L; 					// ritz values
 	std::vector<fp> &R; int &ldR; // eigenresidual 
@@ -55,6 +55,12 @@ public:
 	void Subspace_update_basis();
 	void Subspace_projected_mat_eig();
 	void Subspace_eig_residual();
+	void Check_Convergence_n_Lock(fp tol);
+
+	int getBasisSize();
+	int getMaxBasisSize();
+	
+	bool Converged();
 	
 };
 

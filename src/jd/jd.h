@@ -14,8 +14,11 @@ template<class fp, class sfp>
 class JD {
 	
 	eigenTarget_t  eigTarget;   // Smallest by absolute value 
-	int 				   numEvals;    // number of wanted eigenvalues
-
+	//int 				   numEvals;    // number of wanted eigenvalues
+	int 					 maxIters;
+	int						 dim;
+	fp						 tol;
+	
 	/* Shared variables between classes */
 	std::vector<fp> w; int ldw; // common with basis and sqmr
 															// next subspace direction
@@ -36,7 +39,7 @@ class JD {
 	Matrix<fp>    mat;
 	Subspace<fp>  basis; // implement after basis implementation
 	//SQMR<fp,sfp> sqmr;  // implement after s implementation
-	
+	bool Check_Convergence();
 	
 public:
 										 
@@ -44,7 +47,8 @@ public:
 	JD() = delete;
 	
 	JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
-			int dim_, sparseDS_t DS_,int nEvals, eigenTarget_t eigTarget_,int maxBasis_, target_t target_); 
+			int dim_, sparseDS_t DS_, fp norm_, int nEvals, eigenTarget_t eigTarget_, fp tol_,
+			int maxBasis_, target_t target_,int maxIters_); 
 
 };
 

@@ -26,6 +26,7 @@ class Matrix{
 		std::vector<int> m_vec_COL_INDEX; // column index vector	
 		std::vector<int> m_vec_ROW_INDEX; // row index vector
 		
+		fp 								 m_norm{};      // matrix norm
 		int const		       m_dim{}; 	    // dimension of matrix
 		sparseDS_t 				 m_DS{};        // type of sparse matrix representation
 		target_t 					 m_target{};		// target machinery for computations
@@ -33,11 +34,13 @@ class Matrix{
 		
 		Matrix() = delete;
 		Matrix(std::vector<fp> &vals_, std::vector<int> &cols_,
-					 std::vector<int> &rows_, int dim_, sparseDS_t DS_ , LinearAlgebra &la_);	
+					 std::vector<int> &rows_, int dim_, sparseDS_t DS_ , fp norm_, LinearAlgebra &la_);	
 		
 		void matVec(fp *x, int ldx, fp *y, int ldy, int dimBlock); // y = Ax	
 		void matVec(std::vector<fp> &x, int ldx, std::vector<fp> &y, int ldy, int dimBlock); // y = Ax	
 		int Dim();
+		fp Norm();
+		
 	};
 }
 

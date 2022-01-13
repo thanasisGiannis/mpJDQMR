@@ -33,6 +33,7 @@ void mpjd::LinearAlgebra::gemm(char transa,char  transb, int m, int n, int k,
 			tb = CblasNoTrans;
 			break;
 		default:
+		  std::cout << "Fault" << std::endl;
 			exit(-1);
 	}
 
@@ -42,7 +43,7 @@ void mpjd::LinearAlgebra::gemm(char transa,char  transb, int m, int n, int k,
 	MKL_INT kk = static_cast<MKL_INT>(k);
 
 	cblas_dgemm(CblasColMajor, ta, tb,mm,nn,kk, alpha,a,lda, b,ldb,beta, c,ldc);
-	return;
+
 }
 
 
