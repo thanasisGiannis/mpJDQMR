@@ -15,7 +15,7 @@ void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
 //	std::cout << name << "[]" << std::endl;
 	for(auto i=0;i<rows;i++){	
 		for(auto j=0;j<cols; j++){
-			std::cout << name << "("<< i+1 << "," << j+1 << ")=" << A_[i+j*ldA] << "        " << std::endl;
+			std::cout << name << "("<< i+1 << "," << j+1 << ")=" << A_[i+j*ldA] << ";" << std::endl;
 		}
 	}
 }
@@ -62,7 +62,6 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarg
 {
 
 	V.reserve(dim*maxBasis*numEvals); ldV = dim; // subspace basis
-//	init_vec_zeros(V,dim*maxBasis*numEvals);
 	
 	T.reserve(maxBasis*numEvals*maxBasis*numEvals); ldT = maxBasis*numEvals;// projected matrix
 	init_vec_zeros(T,maxBasis*numEvals*maxBasis*numEvals);
@@ -88,10 +87,8 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarg
 	init_vec_zeros(R,dim*numEvals);
 
 	Qlocked.reserve(dim*numEvals); ldQlocked = dim; // locked eigenvectors
-//	init_vec_zeros(Qlocked,dim*numEvals);
 
 	Llocked.reserve(numEvals); 								      // locked eigenvalues
-//	init_vec_zeros(Llocked,numEvals);
 
 	Rlocked.reserve(dim*numEvals); ldRlocked = dim; // locked eigen residual 
 	
@@ -148,16 +145,13 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 		}	
 		auto alpha {la.nrm2(rows,&vv[0+j*ldV],1)}	;
 		la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    // v = v/norm(v)
-
 	}
-
-
+	
 }
 
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
-
 
 	mat.matVec(w,ldw, Aw, ldAw, blockSize);     // Aw  = A*w
 	AV.insert(AV.end(), Aw.begin() , Aw.end()); // [AV = [AV Aw]
@@ -173,31 +167,41 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 	/**
 		T = [	T 0; 0 w'Aw]
 	**/
+	
+//	static int k=-1;
+//	k++;
+//	std::cout <<"\%!" << Aw.data() << std::endl;
 	la.gemm('T','N', blockSize, blockSize, dim, one, w_, ldw,
 						Aw_, ldAw, zero, &T_[basisSize*blockSize + basisSize*blockSize*ldT],ldT);	
 						
+//	printMat(T,ldT,10,10,"T0"+std::to_string(k));
 	/* only the diagonal part is of interest */					
 	if(basisSize < 1) return;
 
 	/**
 		T = [	T V'Aw; 0 w'Aw]
 	**/
-	la.gemm('T','N', blockSize, basisSize*blockSize, dim, one, V_, ldV,
-						Aw_, ldAw, zero, &T_[basisSize*blockSize + ((basisSize-1)*blockSize)*ldT],ldT);	
-
+	
+	la.gemm('T','N', basisSize*blockSize, blockSize, dim, one, V_, ldV,
+						Aw_, ldAw, zero, &T_[0 + basisSize*blockSize*ldT],ldT);	
+	
+//	printMat(T,ldT,10,10,"T1"+std::to_string(k));
 	/**
 		T = [	T V'Aw; w'AV w'Aw]
 	**/
 	la.gemm('T','N', blockSize, basisSize*blockSize, dim, one, Aw_, ldAw,
-						V_, ldV, zero, &T_[(basisSize-1)*blockSize + basisSize*blockSize*ldT],ldT);	
+						V_, ldV, zero, &T_[basisSize*blockSize + 0*ldT],ldT);	
 
-}
+//	printMat(T,ldT,10,10,"T2"+std::to_string(k));
+	
+}	
 
 template<class fp> 
 void mpjd::Subspace<fp>::Subspace_update_basis(){
 	// V = [V w]
 	V.insert(V.end(), w.begin() , w.end());
-	basisSize+=1;
+	basisSize = basisSize + 1;
+//	std::cout <<"!" << basisSize << std::endl;
 }
 
 
@@ -208,11 +212,7 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	qq = T; // copy data values from T to qq 
 					// eig replaces QQ with eigenvectors of T
 
-//	std::cout << "======" << std::endl;
-//	std::cout << qq.data() << std::endl << T.data() << std::endl;
-//	std::cout << *(qq.data()) << std::endl << *(T.data()) << std::endl;
-//	printMat(T,ldT,(basisSize+1)*blockSize,(basisSize+1)*blockSize,"T");
-	la.eig((basisSize+1)*blockSize, qq.data() , ldqq, LL.data(), numEvals, eigTarget);
+	la.eig((basisSize)*blockSize, qq.data() , ldqq, LL.data(), numEvals, eigTarget);
 
 	// eig returns ALL eigenpairs of T
 	// extract the wanted ones
@@ -228,10 +228,18 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 
 	switch(eigTarget){
 		case eigenTarget_t::SM:
-			LLstart_ += (basisSize)*blockSize-numEvals;
-			LLend_   += (basisSize)*blockSize;
-			qqstart_ += ((basisSize)*blockSize-numEvals)*ldq;
-			qqend_   += ((basisSize)*blockSize)*ldq;
+			LLstart_ += 0;
+			LLend_   += blockSize;
+			
+			qqstart_ += (0*ldq);
+			qqend_   += (blockSize*ldq);
+			break;
+		case eigenTarget_t::LM:
+			LLstart_ += ((basisSize-1)*blockSize);
+			LLend_   += ((basisSize)*blockSize);
+			
+			qqstart_ += (((basisSize-1)*blockSize)*ldq);
+			qqend_   += (((basisSize)*blockSize)*ldq);
 			break;
 		default:
 				exit(-1);
@@ -241,7 +249,13 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	L.insert(L.end(), LLstart_ , LLend_);
 	q.insert(q.end(), qqstart_, qqend_);
 
-
+	/* Q = V*qq */
+	fp one  = static_cast<fp>(1.0);
+	fp zero = static_cast<fp>(0.0);
+	
+	la.gemm('N', 'N',dim, blockSize, basisSize*blockSize,
+					one, V.data() , ldV, q.data() , ldq, zero, Q.data() , ldQ);
+	
 }
 
 
@@ -249,7 +263,6 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	// R = AV*q-Q*L
-//	std::cout << "Subspace_eig_residual()" << std::endl;
 	fp *AV_ = AV.data();
 	fp *q_  =  q.data();
 	fp *Q_  =  Q.data();
@@ -273,7 +286,6 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 						one, AV_, ldAV, q_, ldq, minus_one, R_, ldR);
 
 
-//std::cout << "~Subspace_eig_residual()" << std::endl;
 
 }
 
@@ -284,8 +296,8 @@ void mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 	fp  rho{};
 	std::vector<int> conv_num{};
 	for(auto j=0;j<numEvals;j++){
-		rho = la.dot(dim,&R_[0+j*ldR],1,&R_[0+j*ldR],1); rho = sqrt(rho);
-		
+		rho = la.nrm2(dim,&R_[0+j*ldR],1);
+
 		if(rho < tol*mat.Norm()){
 			conv_num.push_back(j);
 		}
@@ -297,14 +309,14 @@ void mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 			int j = conv_num.back();
 			conv_num.pop_back();		
 			/** 
-				 insert j-th vector to Q
+				 insert j-th eigenpair
 			*/
 			Rlocked.insert(Rlocked.end(),R.at(0+j*ldQ),R.at(0 + j*ldQ+dim-1));
 			Qlocked.insert(Qlocked.end(),Q.at(0+j*ldQ),Q.at(0 + j*ldQ+dim-1));
 			Llocked.insert(Llocked.end(),L.at(j),L.at(j));
 					
 			/**
-				  remove j-th vector from R
+				  remove j-th eigenpair
 			*/
 			R.erase(R.begin()+ (0+j*ldQ),R.begin() +(0 + j*ldQ+dim));
 			Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + j*ldQ+dim));
@@ -313,7 +325,6 @@ void mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 			lockedNumEvals++;
 			numEvals--;	
 	}	
-	
 };
 
 

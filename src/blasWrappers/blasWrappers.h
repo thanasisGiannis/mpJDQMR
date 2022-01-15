@@ -5,28 +5,20 @@ namespace mpjd {
 
 enum class eigenTarget_t {
 							/* Target of wanted eigenvalues */
-							SM // smallest by absolute value
+							SM, // smallest by absolute value
+							LM // bigest by largest absolute value 
 							/* future implementations */
-							//BM // bigest by absolute value 
 							//SR // smallest real
 							//BR // bigest real
 							
 						};
 
-enum class target_t
-		 {  
-		 		// following future targets 
-		 		// DEVICE, //[=GPU]
-		 		HOST
-		 	};
 
 
 class LinearAlgebra {
-
-	target_t target;	
 public:
 	
-	LinearAlgebra(target_t target_);
+	LinearAlgebra();
 
 	std::string getTarget();
 	

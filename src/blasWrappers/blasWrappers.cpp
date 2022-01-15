@@ -2,8 +2,7 @@
 #include <mkl.h>
 #include "blasWrappers.h"
 
-mpjd::LinearAlgebra::LinearAlgebra(target_t target_) 
-: target(target_)
+mpjd::LinearAlgebra::LinearAlgebra()
 {
 	/* future implementation will use target to select cpu or gpu target machine */	
 }
@@ -73,11 +72,4 @@ void mpjd::LinearAlgebra::eig(int n, double* a, int  lda,  double *l, int numEva
 	LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', n, a, lda, l );
 }
 
-std::string mpjd::LinearAlgebra::getTarget(){
-	if(target == target_t::HOST){
-		return "HOST";
-	}else {
-		return "Nothing";
-	}
-}
 

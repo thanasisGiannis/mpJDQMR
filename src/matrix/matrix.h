@@ -29,7 +29,6 @@ class Matrix{
 		fp 								 m_norm{};      // matrix norm
 		int const		       m_dim{}; 	    // dimension of matrix
 		sparseDS_t 				 m_DS{};        // type of sparse matrix representation
-		target_t 					 m_target{};		// target machinery for computations
 	public:
 		
 		Matrix() = delete;
