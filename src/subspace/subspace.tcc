@@ -107,8 +107,7 @@ template<class fp>
 void mpjd::Subspace<fp>::Subspace_init_direction(){
 
 	/*
-		Initialize basis V with random vectors
-		Then orthogonalize them if in blocking mode
+		Initialize basis w with random vals
 	*/
 
 	std::random_device rand_dev;
@@ -131,6 +130,7 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 	int rows = dim;
 	int cols = basisSize*blockSize;
 
+  /* w = orth(V,w) */
 	for(int j=0; j < blockSize; j++){
 		for(int i=0; i < cols ; i++){
 				fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
@@ -138,6 +138,19 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 		}	
 	}
 
+  /* w = orth(Qlocked,w) */
+  VV = static_cast<fp*>(Qlocked.data());
+	if(Qlocked.size() > 0){
+	  for(int j=0; j < blockSize; j++){
+		  for(int i=0; i < Qlocked.size()/ldQlocked ; i++){
+				  fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
+				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldV],1);     	// v = v - V(i)*alpha
+		  }	
+	  }
+	}
+
+
+  /* w = orth(w) */
 	for(int j=0; j < blockSize; j++){
 		for(int i=0; i < j ; i++){
 				auto alpha {-la.dot(rows,&vv[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
@@ -146,6 +159,7 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 		auto alpha {la.nrm2(rows,&vv[0+j*ldV],1)}	;
 		la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    // v = v/norm(v)
 	}
+	
 	
 }
 
@@ -304,7 +318,9 @@ bool mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 		
 	}
 	
+	bool restart = false;
 	while(conv_num.size() > 0){
+	    restart = true;
 			/* pop last element of conv as j*/
 			int j = conv_num.back();
 			conv_num.pop_back();		
@@ -323,10 +339,15 @@ bool mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 			Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + (j+1)*ldQ-1));
 			L.erase(L.begin() + j);
 			
-			lockedNumEvals++;
+			/* update variable conserning problem dimesionalities*/
+			lockedNumEvals++; 
 			numEvals--;	
-			basisSize--;
+			blockSize--;
 	}	
+	
+	if(restart){
+	  Subspace_restart();
+	}
 	
 	if(numEvals <= 0){
 		return true;
@@ -337,20 +358,56 @@ bool mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 
 
 template<class fp>
+void mpjd::Subspace<fp>::Subspace_Check_size_and_restart(){
+
+  /* check if maxBasisSize is reached and if true restart  */
+  if(basisSize == maxBasis-1){
+    Subspace_restart();
+  }
+  
+
+}
+
+
+template<class fp>
+void mpjd::Subspace<fp>::Subspace_restart(){
+  //std::cout << "Restarting" << std::endl;
+  /* restart basis as:
+     V = Q
+     H = diag(L)
+  */
+  static int counter = 0;
+  counter ++ ;
+  
+  
+  /* V = Q */
+  V.clear(); 
+  V.insert(V.end(), Q.begin(), Q.end());
+  
+  /* T = zeros() */
+  std::fill(T.begin(), T.end(), static_cast<fp>(0.0));  
+
+  /* T = diag(L) */
+  fp* T_ = static_cast<fp*>(T.data());
+  fp* L_ = static_cast<fp*>(L.data());
+  
+  for(auto j = 0; j < L.size() ; j++){
+    T_[j+j*ldT] = L_[j];
+  }
+
+  basisSize = 1;
+  /* AV = A*V */
+ 	mat.matVec(V,ldV, Aw, ldAw, blockSize);     // Aw  = A*w
+ 	AV.clear();
+  AV.insert(AV.end(),Aw.begin(), Aw.end());
+  
+}
+
+template<class fp>
 int mpjd::Subspace<fp>::getBasisSize(){return basisSize;}
 
 template<class fp>
 int mpjd::Subspace<fp>::getMaxBasisSize(){return maxBasis;}
-
-template<class fp>
-bool mpjd::Subspace<fp>::Converged(){
-	
-	if(numEvals <= 0){
-		return true;
-	}else{
-		return false;
-	}
-}
 
 
 

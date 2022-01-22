@@ -27,18 +27,6 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_, std::vector<int> row_index_, std::ve
 {
 
 
-/*
-	std::cout<< "Q " <<  Q.capacity() << " "<< ldQ << std::endl;
-	std::cout<< "L " <<  L.capacity() << std::endl;
-
-	std::cout<< "R " <<  R.capacity() << " "<< ldR << std::endl;
-
-	std::cout<< "Qlocked " <<  Qlocked.capacity() << " "<< ldQlocked << std::endl;
-
-	std::cout<< "Llocked " <<  Llocked.capacity() << std::endl;
-	std::cout<< "Rlocked " <<  Rlocked.capacity() << " "<< ldRlocked << std::endl;
-*/
-
 }
 
 

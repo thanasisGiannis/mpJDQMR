@@ -37,6 +37,8 @@ class Subspace {
 	
 	Matrix<fp>    &mat;
 	LinearAlgebra &la;
+
+  void Subspace_restart();
 		
 public:
 	Subspace()=delete;
@@ -56,11 +58,12 @@ public:
 	void Subspace_projected_mat_eig();
 	void Subspace_eig_residual();
 	bool Check_Convergence_n_Lock(fp tol);
-
+  
+  void Subspace_Check_size_and_restart();
+  
 	int getBasisSize();
 	int getMaxBasisSize();
 	
-	bool Converged();
 	
 };
 
