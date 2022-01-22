@@ -55,7 +55,7 @@ public:
 	void Subspace_update_basis();
 	void Subspace_projected_mat_eig();
 	void Subspace_eig_residual();
-	void Check_Convergence_n_Lock(fp tol);
+	bool Check_Convergence_n_Lock(fp tol);
 
 	int getBasisSize();
 	int getMaxBasisSize();

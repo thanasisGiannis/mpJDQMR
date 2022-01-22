@@ -47,8 +47,8 @@ public:
 	JD() = delete;
 	
 	JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
-			int dim_, sparseDS_t DS_, std::vector<fp> &Q_,std::vector<fp> &L_, 
-			std::vector<fp> &R_, fp norm_, int nEvals, eigenTarget_t eigTarget_, fp tol_,
+			int dim_, sparseDS_t DS_, std::vector<fp> &Q_, int &ldQ_, std::vector<fp> &L_, 
+			std::vector<fp> &R_, int &ldR_, fp norm_, int nEvals, eigenTarget_t eigTarget_, fp tol_,
 			int maxBasis_, int maxIters_); 
 
 };

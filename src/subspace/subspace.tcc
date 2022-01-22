@@ -290,7 +290,7 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 }
 
 template<class fp>
-void mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
+bool mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 
 	fp *R_ = R.data();
 	fp  rho{};
@@ -304,26 +304,34 @@ void mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 		
 	}
 	
-	while(conv_num.size() != 0){
+	while(conv_num.size() > 0){
 			/* pop last element of conv as j*/
 			int j = conv_num.back();
 			conv_num.pop_back();		
+			
 			/** 
 				 insert j-th eigenpair
 			*/
-			Rlocked.insert(Rlocked.end(),R.at(0+j*ldQ),R.at(0 + j*ldQ+dim-1));
-			Qlocked.insert(Qlocked.end(),Q.at(0+j*ldQ),Q.at(0 + j*ldQ+dim-1));
-			Llocked.insert(Llocked.end(),L.at(j),L.at(j));
-					
+			Rlocked.insert(Rlocked.end(), R.begin() + (0+j*ldR), R.begin() + (0 + (j+1)*ldR));
+			Qlocked.insert(Qlocked.end(), Q.begin() + (0+j*ldQ), Q.begin() + (0 + (j+1)*ldQ));
+			Llocked.push_back(L.at(j));
+
 			/**
 				  remove j-th eigenpair
 			*/
-			R.erase(R.begin()+ (0+j*ldQ),R.begin() +(0 + j*ldQ+dim));
-			Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + j*ldQ+dim));
+			R.erase(R.begin()+ (0+j*ldQ),R.begin() +(0 + (j+1)*ldQ-1));
+			Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + (j+1)*ldQ-1));
 			L.erase(L.begin() + j);
 			
 			lockedNumEvals++;
 			numEvals--;	
+			basisSize--;
+	}	
+	
+	if(numEvals <= 0){
+		return true;
+	}else{
+		return false;
 	}	
 };
 
