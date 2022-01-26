@@ -41,8 +41,27 @@ class Matrix{
 		fp Norm();
 		
 	};
-}
 
+
+template <class fp,class sfp>
+class ScaledMatrix : public Matrix<fp>{
+	private:
+	  void init_vec_norms_COO();
+	  void init_vec_norms();  
+	protected:
+	  std::vector<fp>  m_cols_norms;
+	  std::vector<sfp> m_vec_Scaled_VALS;
+	public:
+		
+		ScaledMatrix() = delete;
+		ScaledMatrix(Matrix<fp> &mat_);	
+		
+		//update_matrix_shift(fp ita);
+		
+		
+		
+	};
+}
 
 
 // matrix member functions implementations (templates)

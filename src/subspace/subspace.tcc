@@ -7,6 +7,7 @@
 
 //#include "../include/helper.h"
 
+#if 0
 template<class fp> 
 void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
 	fp *A_ = A.data();
@@ -19,7 +20,7 @@ void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
 		}
 	}
 }
-
+#endif
 
 
 template<class fp>

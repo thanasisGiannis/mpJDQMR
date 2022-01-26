@@ -19,9 +19,12 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_, std::vector<int> row_index_, std::ve
 	Qlocked(Q_), ldQlocked(ldQ_),
 	Llocked(L_),
 	Rlocked(R_), ldRlocked(ldR_),
-	basis(Subspace<fp>(mat, dim_, nEvals,eigTarget_, maxBasis_,la,w,ldw, 
+	basis(std::move(std::unique_ptr<Subspace<fp>>(new Subspace<fp>(mat, dim_, nEvals,
+	                    eigTarget_, maxBasis_,la,w,ldw, 
 											Q,ldQ,L,R,ldR,
-											Qlocked,ldQlocked,Llocked,Rlocked,ldRlocked)),
+											Qlocked,ldQlocked,Llocked,Rlocked,ldRlocked)))),
+	sqmr(std::move(std::unique_ptr<ScaledSQMR<sfp,fp>>(new ScaledSQMR<sfp,fp>(mat, Q, 
+	                                           ldQ,L, R, ldR, Qlocked, ldQlocked)))),										
 	eigTarget(eigTarget_)
 					
 {

@@ -2,10 +2,11 @@
 
 #include "../blasWrappers/blasWrappers.h"
 #include "../matrix/matrix.h"
-#include "../matrix/smatrix.h"
+//#include "../matrix/smatrix.h"
 #include "../subspace/subspace.h"
 #include "../solver/sqmr.h"
 
+#include <memory>
 namespace mpjd{
 
 
@@ -35,10 +36,11 @@ class JD {
 
 
 	/* CAUTION THIS SHOULD BE AFTER VARIABLES */
-	LinearAlgebra la;
-	Matrix<fp>    mat;
-	Subspace<fp>  basis; // implement after basis implementation
-	//SQMR<fp,sfp> sqmr;  // implement after s implementation
+	LinearAlgebra      la;
+	Matrix<fp>         mat;
+	std::unique_ptr<Subspace<fp>>   basis; // implement after basis implementation
+	std::unique_ptr<SQMR<fp>>       sqmr;  // implement after s implementation
+	
 	bool Check_Convergence();
 	
 public:
