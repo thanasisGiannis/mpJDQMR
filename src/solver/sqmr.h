@@ -32,7 +32,8 @@ class ScaledSQMR : public SQMR<fp> {
 	std::vector<sfp> sR;       int sldR;       // Residual vector
 	std::vector<sfp> sQlocked; int sldQlocked; // Locked Ritz vectors
 	
-	std::shared_ptr<Matrix<fp>>      mat; // Coefficient Matrix
+	//std::shared_ptr<Matrix<fp>>   mat; // Coefficient Matrix
+  ScaledMatrix<fp,sfp>   *mat;//(Matrix<fp> &mat_);	
 
 public:
 	/* ========= */
