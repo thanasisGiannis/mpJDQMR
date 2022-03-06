@@ -23,8 +23,9 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_, std::vector<int> row_index_, std::ve
 	                    eigTarget_, maxBasis_,la,w,ldw, 
 											Q,ldQ,L,R,ldR,
 											Qlocked,ldQlocked,Llocked,Rlocked,ldRlocked)))),
-	sqmr(std::move(std::unique_ptr<ScaledSQMR<sfp,fp>>(new ScaledSQMR<sfp,fp>(mat, Q, 
-	                                           ldQ,L, R, ldR, Qlocked, ldQlocked)))),										
+	sqmr(std::move(std::unique_ptr<ScaledSQMR<fp,sfp>>(new ScaledSQMR<fp,sfp>(mat, Q, 
+	                                           ldQ,L, R, ldR,
+	                                           Qlocked,ldQlocked,la)))),										
 	eigTarget(eigTarget_)
 					
 {

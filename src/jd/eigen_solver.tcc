@@ -33,7 +33,6 @@ void mpjd::JD<fp,sfp>::solve(){
 		
 #if 0
 		std::cout << "\%============== " <<  iter << std::endl;
-		std::cout << "basisSize: " << basis.getBasisSize() << std::endl;
 		for(auto j=0;j<R.size()/dim;j++){
 			fp *R_ = R.data();
 			fp rho = la.nrm2(dim,&R_[0+j*ldR],1);

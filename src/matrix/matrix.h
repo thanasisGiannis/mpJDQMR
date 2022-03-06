@@ -47,7 +47,8 @@ template <class fp,class sfp>
 class ScaledMatrix : public Matrix<fp>{
 	private:
 
-
+		void matVec_COO(std::vector<sfp> &x, int ldx,std::vector<sfp> &y, int ldy, int dimBlock);
+		void matVec_COO(sfp *x, int ldx, sfp *y, int ldy, int dimBlock);
 
 	  std::vector<fp>    m_cols_norms;
 	  std::vector<sfp>   m_vec_sVALS; // values to be updated at every step with ita
@@ -59,9 +60,12 @@ class ScaledMatrix : public Matrix<fp>{
 		
 		ScaledMatrix() = delete;
 		ScaledMatrix(Matrix<fp> &mat_);	
-		// TODO: 
 		void update_matrix_shift(const fp ita);
-		
+
+		// TODO: 
+    // matVec with scaled matrix		
+		void matVec(sfp *x, int ldx, sfp *y, int ldy, int dimBlock); // y = Ax	
+		void matVec(std::vector<sfp> &x, int ldx, std::vector<sfp> &y, int ldy, int dimBlock); // y = Ax	
 		
 		
 		
@@ -73,7 +77,7 @@ class ScaledMatrix : public Matrix<fp>{
 // here to be included the template file with member definitions
 #include "matrix.tcc"
 #include "matrix_matvecs.tcc"
-
+#include "ScaledMatrixMatvecs.tcc"
 
 
 

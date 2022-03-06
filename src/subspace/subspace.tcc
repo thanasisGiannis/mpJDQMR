@@ -377,8 +377,13 @@ void mpjd::Subspace<fp>::Subspace_restart(){
      V = Q
      H = diag(L)
   */
+#if 0  
+  static int nr = 0;
+  std::cout << "Restarting " << nr << " "<< Llocked.size() << std::endl;
+  nr++;
   static int counter = 0;
   counter ++ ;
+#endif  
   
   
   /* V = Q */

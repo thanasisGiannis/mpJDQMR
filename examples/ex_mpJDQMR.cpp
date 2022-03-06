@@ -3,11 +3,12 @@
 #include <iterator>
 #include "mpjd.h"
 #include <fstream>
+#include <tgmath.h>
 
 /* Read from mtx file a sparse matrix in COO representation */
 template<class fp>
 void readSymMtx(std::string matName,
-				std::vector<int> &rows, std::vector<int> &cols, std::vector<fp> &vals, int &dim);
+				std::vector<int> &rows, std::vector<int> &cols, std::vector<fp> &vals, int &dim, fp &norm);
 				
 
 using namespace mpjd;
@@ -22,16 +23,38 @@ int main(){
 	
 	std::vector<double>     x;//{1,1,1};
 	std::vector<double>     y;//{0,0,0};
+	std::vector<double> 		Q{}; int ldQ;
+	std::vector<double>     L{}; 
+	std::vector<double>			R{}; int ldR;
+	
 	int dim{};
-	int numEvals{5};
+	int numEvals{1};
 	int maxBasis{15};
-	readSymMtx<double>("../matrices/bfwb62.mtx",rows,cols,vals,dim);
+	double tol{1e-04};
+	double norm{};
+	LinearAlgebra la;
+	
+//	readSymMtx<double>("../matrices/bfwb62.mtx",rows,cols,vals,dim,norm);
+	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
-	
-	JD<double,double> *jd = new JD<double,double>{vals, rows, cols, dim,
-			sparseDS_t::COO,numEvals, eigenTarget_t::SM, maxBasis,  target_t::HOST};
+	int maxIters{3*dim};
+	auto *jd = new JD<double,float>{vals, rows, cols, dim,
+			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, 
+			numEvals,	eigenTarget_t::SM, tol, maxBasis, maxIters};
+			
 	jd->solve();	
+	std::cout << Q.size() << std::endl;
 	
+	double *Q_ = Q.data();
+	double  rho{};
+	
+	for(auto j=0;j<numEvals;j++){
+	rho = *(L.data() + j);// a.nrm2(dim,&Q_[0+j*ldQ],1);
+	//std::cout << "L(:,j) = " << *(L.data()+j) << std::endl;
+	std::cout << "rho("<<j<<") = " << rho << std::endl;
+		
+	}
+
 	delete jd;
 }
 
@@ -42,40 +65,45 @@ int main(){
 /* Read from mtx file a sparse matrix in COO representation */
 template<class fp>
 void readSymMtx(std::string matName,
-				std::vector<int> &rows, std::vector<int> &cols, std::vector<fp> &vals, int &dim){
+				std::vector<int> &rows, std::vector<int> &cols, std::vector<fp> &vals, int &dim, fp &norm){
 
 		std::ifstream ifile{matName};
 		int num_row, num_col, num_lines;
 
+		norm = static_cast<fp>(0);
 		// Ignore comments headers
 		while (ifile.peek() == '%') ifile.ignore(2048, '\n');
 
 		// Read number of rows and columns
-		ifile >> num_row>> num_col >> num_lines;
-		dim =num_row;
-		// Create 2D array and fill with zeros
-		//double* matrix;              
-		//matrix = new double[num_row * num_col];      
-		//std::fill(matrix, matrix + num_row *num_col, 0.);.
+		ifile >> num_col >> num_row >> num_lines;
+		
+		dim = num_row;
 
 		// fill the matrix with data
 		for (int l = 0; l < num_lines; l++)
 		{
 				fp val;
 				int row, col;
-				ifile >> row >> col >> val;
+				ifile >> col >> row >> val;
+				col-=1;
+				row-=1;
 				//matrix[(row -1) + (col -1) * num_row] = data;
-				rows.push_back(row-1);
-				cols.push_back(col-1);
-				vals.push_back(val);
-				
-				if(rows != cols){
+				rows.push_back(row);
+				cols.push_back(col);
+				vals.push_back(static_cast<fp>(val));
+
+	
+				if(row != col){
 					// add the symmetric part
-					rows.push_back(col-1);
-					cols.push_back(row-1);
+					rows.push_back(col);
+					cols.push_back(row);
+					vals.push_back(static_cast<fp>(val));
+				}
+				
+				if(fabs(static_cast<fp>(val)	) > norm){ 
+					norm = fabs(static_cast<fp>(val));
 				}
 		}
-
 		ifile.close();
 }
 
