@@ -85,7 +85,9 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
   /* clear previous solution */
   XX.clear();
   
-  
+  auto iDR  = this->R;
+  int ldiDR = this->ldR;
+
   /* Call the actual solver */
   for(auto i=0; i < this->L.size(); i++){
     /* Change Matrix shift*/
@@ -93,18 +95,24 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
    
     /* Casting input vectors into the inner loop precision */ 
     /* cast to solver precision ONLY the vectors to be used*/  
-    auto rb   = this->R.begin();
-    auto ldrb = this->ldR;
+    
+    mat->applyScalInvMat(iDR.data()+ldiDR*i,ldiDR,mat->Dim(),1); // DR = D\R
+    
+    
+    auto rb   = iDR.begin();
+    auto ldrb = ldiDR;
     sR.clear(); sR.resize(mat->Dim());
     std::transform(rb + (0+i*ldrb),rb + (0+(i+1)*ldrb), sR.begin(),to_sfp);
 
 
-  
-  
+    // at this point right hand side vectors are up to date with the diagonal sca
+    
     x = sR;    
     /* Casting output vectors into the outer loop precision */  
     XX.resize(XX.size()+mat->Dim());
     std::transform(x.begin(),x.end(), XX.end()-mat->Dim(),to_fp);
+    //mat->applyScalInvMat(XX,mat->Dim(),mat->Dim(),this->L.size()); // DR = D\R
+    
   }
     
   

@@ -1,6 +1,7 @@
 #pragma once
 #include "../blasWrappers/blasWrappers.h"
 #include <vector>
+#include <iterator>
 // matrix interface class
 // needed by main program and JD main iteration
 namespace mpjd{
@@ -49,7 +50,7 @@ class ScaledMatrix : public Matrix<fp>{
 
 		void matVec_COO(std::vector<sfp> &x, int ldx,std::vector<sfp> &y, int ldy, int dimBlock);
 		void matVec_COO(sfp *x, int ldx, sfp *y, int ldy, int dimBlock);
-
+    
 	  std::vector<fp>    m_cols_norms;
 	  std::vector<sfp>   m_vec_sVALS; // values to be updated at every step with ita
 
@@ -66,7 +67,9 @@ class ScaledMatrix : public Matrix<fp>{
     // matVec with scaled matrix		
 		void matVec(sfp *x, int ldx, sfp *y, int ldy, int dimBlock); // y = Ax	
 		void matVec(std::vector<sfp> &x, int ldx, std::vector<sfp> &y, int ldy, int dimBlock); // y = Ax	
-		
+		void applyScalMat(fp *x_, int ldx, int rows, int cols); // applying to a vector x the DiagVector ; x = Dx
+    void applyScalInvMat(fp *x_, int ldx, int rows, int cols);  // applying to a vector x the inv DiagVector ; x = inv(D)x
+
 		
 		
 	};

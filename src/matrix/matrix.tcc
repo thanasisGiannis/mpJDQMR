@@ -142,9 +142,32 @@ void mpjd::ScaledMatrix<fp,sfp>::update_matrix_shift(const fp ita){
 
 
 
+template<class fp, class sfp>
+void mpjd::ScaledMatrix<fp,sfp>::applyScalMat(fp *x_, int ldx, int rows, int cols){
+ // applying to a vector x the DiagVector ; x = Dx
+ auto D = m_cols_norms.data();
+ auto x = x_;//.data();	
+ 
+ for(auto r=0; r<rows; r++){
+  for(auto c=0; c<cols; c++){
+      x[r+c*ldx] *= D[r];
+  }    
+ }
+	
+}
+template<class fp, class sfp>
+void mpjd::ScaledMatrix<fp,sfp>::applyScalInvMat(fp *x_, int ldx, int rows, int cols){
+  // applying to a vector x the inv DiagVector ; x = inv(D)x
+ auto D = m_cols_norms.data();
+ auto x = x_;//.data();	
+ 
+ for(auto r=0; r<rows; r++){
+  for(auto c=0; c<cols; c++){
+      x[r+c*ldx] = x[r+c*ldx]/static_cast<fp>(D[r]);
+  }    
+ } 
 
-
-
+}
 
 
 
