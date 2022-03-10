@@ -3,3 +3,10 @@ lib/*
 build/*
 matrices/*
 examples/bin/*
+*.cflags
+*.config
+*.creator
+*.cxxflags
+*.files
+*.includes
+*.so
