@@ -34,7 +34,7 @@ class ScaledSQMR : public SQMR<fp> {
 
   /* Input matrices */
 	std::vector<sfp> sQ;       int ldsQ;       // Ritz vectors
-	std::vector<sfp> sL;                       // Ritz values
+	//std::vector<sfp> sL;                       // Ritz values
 	std::vector<sfp> sR;       int ldsR;       // Residual vector
 	std::vector<sfp> sQlocked; int ldsQlocked; // Locked Ritz vectors
 	

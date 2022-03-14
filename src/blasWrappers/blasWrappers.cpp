@@ -32,7 +32,7 @@ void mpjd::LinearAlgebra::gemm(char transa,char  transb, int m, int n, int k,
 			tb = CblasNoTrans;
 			break;
 		default:
-		  std::cout << "Fault" << std::endl;
+		  //std::cout << "Fault" << std::endl;
 			exit(-1);
 	}
 

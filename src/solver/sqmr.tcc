@@ -72,9 +72,10 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
   auto to_sfp = [](const fp d){return static_cast<sfp>(d);};
   auto to_fp  = [](const sfp d){return static_cast<fp>(d);};
   
-  sQ.clear(); sQ.resize(this->Q.size());
+  // cast to solver precision 
+  sQ.clear(); sQ.resize(this->Q.size()); ldsQ = this->ldQ;
   std::transform(this->Q.begin(),this->Q.end(),sQ.begin(),to_sfp);
-  sQlocked.clear(); sQlocked.resize(this->Qlocked.size());
+  sQlocked.clear(); sQlocked.resize(this->Qlocked.size());  //ldsQlocked = this->ldQlocked;
   std::transform(this->Qlocked.begin(),this->Qlocked.end(),sQlocked.begin(),to_sfp);
   
   
@@ -101,26 +102,31 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
     
     auto rb   = iDR.begin();
     auto ldrb = ldiDR;
+    // scale to right hand side vector
+    auto nrmR = la.nrm2(mat->Dim(), iDR.data()+(0+i*ldrb),1); nrmR = static_cast<sfp>(1)/nrmR;
+    la.scal(mat->Dim(), nrmR, iDR.data()+(0+i*ldrb), 1);
+
+    // cast to solver precision 
     sR.clear(); sR.resize(mat->Dim());
     std::transform(rb + (0+i*ldrb),rb + (0+(i+1)*ldrb), sR.begin(),to_sfp);
 
-
     // at this point right hand side vectors are up to date with the diagonal sca
-    
+    //
     x = sR;    
+    
     /* Casting output vectors into the outer loop precision */  
     XX.resize(XX.size()+mat->Dim());
     std::transform(x.begin(),x.end(), XX.end()-mat->Dim(),to_fp);
-    //mat->applyScalInvMat(XX,mat->Dim(),mat->Dim(),this->L.size()); // DR = D\R
+    
     
   }
-    
+  mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L.size()); // DR = D\R
   
   
-  std::cout << std::endl;
-  std::cout << sR.size() << std::endl;
-  std::cout << x.size() << std::endl;  
-  std::cout << XX.size() << std::endl;
+//  std::cout << std::endl;
+//  std::cout << sR.size() << std::endl;
+//  std::cout << x.size() << std::endl;  
+//  std::cout << XX.size() << std::endl;
 /*
   std::cout << "D: " << std::setprecision(16) << *(this->L.data())  << std::endl;
   std::cout << "F: " << std::setprecision(16) << *sL.data() << std::endl;

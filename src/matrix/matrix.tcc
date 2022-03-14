@@ -31,7 +31,7 @@ mpjd::Matrix<fp>::Matrix(std::vector<fp> &vals_, std::vector<int> &cols_,
 	m_norm(norm_),
 	m_la(la_)
 {
-  std::cout << "Matrix" << std::endl;
+//  std::cout << "Matrix" << std::endl;
 }
 	
 	
