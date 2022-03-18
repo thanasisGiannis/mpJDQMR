@@ -31,7 +31,7 @@ void mpjd::JD<fp,sfp>::solve(){
 
 		basis->Subspace_eig_residual();             // R = AV*q-Q*L
 		
-#if 0
+#if 1
 		std::cout << "\%============== " <<  iter << std::endl;
 		for(auto j=0;j<R.size()/dim;j++){
 			fp *R_ = R.data();
@@ -40,7 +40,7 @@ void mpjd::JD<fp,sfp>::solve(){
 								<<  std::scientific
 								<< "\%||R(:," << j << ")||=" << rho/mat.Norm() << std::endl;
 								
-			std::cout << "\%L(" << j << ")=" << *(L.data()+j) << std::endl;
+			//std::cout << "\%L(" << j << ")=" << *(L.data()+j) << std::endl;
 			
 		}
 		std::cout << "\%============== " <<  iter << std::endl;

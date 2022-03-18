@@ -40,26 +40,35 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
 
     XX.reserve(this->R.capacity()); 
     
-    
+    /* lower precision data area */
     x.reserve(mat->Dim());                    
     x.insert(x.begin(),x.capacity(),static_cast<sfp>(0.0));
 
-    /* Inner vectors */
-    v1.reserve(mat->Dim()); // Lanczos vector
+    v1.reserve(mat->Dim());                    
     v1.insert(v1.begin(),v1.capacity(),static_cast<sfp>(0.0));
     
-    v2.reserve(mat->Dim()); // Lanczos vector
+    v2.reserve(mat->Dim());                    
     v2.insert(v2.begin(),v2.capacity(),static_cast<sfp>(0.0));
- 
-    p0.reserve(mat->Dim()); // sQMR vector
+    
+    p0.reserve(mat->Dim());                    
     p0.insert(p0.begin(),p0.capacity(),static_cast<sfp>(0.0));
-
-    p1.reserve(mat->Dim()); // sQMR vector
+    
+    p1.reserve(mat->Dim());                    
     p1.insert(p1.begin(),p1.capacity(),static_cast<sfp>(0.0));
+    
+    r1.reserve(mat->Dim());                    
+    r1.insert(r1.begin(),r1.capacity(),static_cast<sfp>(0.0));
 
-    w.reserve(mat->Dim());  // new direction to sqmr iter 
-    w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
+    q0.reserve(2);                    
+    q0.insert(q0.begin(),q0.capacity(),static_cast<sfp>(0.0));
+    
+    q1.reserve(2);                    
+    q1.insert(q1.begin(),q1.capacity(),static_cast<sfp>(0.0));
 
+    QTd.reserve(this->L.capacity());// L.size() = numEvals;                    
+    
+    
+    
 }
       
 
@@ -112,8 +121,7 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
 
     // at this point right hand side vectors are up to date with the diagonal sca
     //
-    x = sR;    
-    
+    solve_eq();
     /* Casting output vectors into the outer loop precision */  
     XX.resize(XX.size()+mat->Dim());
     std::transform(x.begin(),x.end(), XX.end()-mat->Dim(),to_fp);
@@ -137,6 +145,19 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
   return XX;
 }
 
+template<class fp, class sfp>
+void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
+
+//TODO: THERE IS A MAJOR BUG HERE
+//x = sR; return;
+    auto dim = mat->Dim();
+    auto numEvals = this->L.size();
+    
+    
+//    x = t;
+    t = sR ;    return ; // for testing purpose
+
+}
 
 
 

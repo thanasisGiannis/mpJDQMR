@@ -32,28 +32,33 @@ public:
 template<class fp, class sfp>
 class ScaledSQMR : public SQMR<fp> {
 
-  /* Input matrices */
+  /* Input low precision matrices */
 	std::vector<sfp> sQ;       int ldsQ;       // Ritz vectors
-	//std::vector<sfp> sL;                       // Ritz values
 	std::vector<sfp> sR;       int ldsR;       // Residual vector
 	std::vector<sfp> sQlocked; int ldsQlocked; // Locked Ritz vectors
 	
-	
-	std::vector<fp>  XX;        // solution to sqmr
-  std::vector<sfp> x;                    
-
-  /* Inner vectors */
-  std::vector<sfp> v1; // Lanczos vector
-  std::vector<sfp> v2; // Lanczos vector
-   
-  std::vector<sfp> p0; // sQMR vector
-  std::vector<sfp> p1; // sQMR vector
-  
-  std::vector<sfp> w;  // new direction to sqmr iter 
- 	
 	ScaledMatrix<fp,sfp>   *mat;//(Matrix<fp> &mat_);	
   LinearAlgebra          &la;
+	
+	std::vector<fp>  XX;        // solution to sqmr- dimension : dim x numEvals
+                                
+  /* lower precision data area */
+  std::vector<sfp> x;         // dimension : dim           
+  std::vector<sfp> v1; // dimension : dim
+  std::vector<sfp> v2; // dimension : dim
   
+  std::vector<sfp> p0; // dimension : dim
+  std::vector<sfp> p1; // dimension : dim
+  
+  std::vector<sfp> rin; // dimension : dim
+  
+  std::vector<sfp> q0; // dimension : 2
+  std::vector<sfp> q1; // dimension : 2
+  
+  std::vector<sfp> QTd; // dimension : numEvals
+
+  
+  void solve_eq();
 public:
    
 	/* ========= */
