@@ -43,9 +43,12 @@ class ScaledSQMR : public SQMR<fp> {
 	std::vector<fp>  XX;        // solution to sqmr- dimension : dim x numEvals
                                 
   /* lower precision data area */
-  std::vector<sfp> x;         // dimension : dim           
+  std::vector<sfp> x;  // dimension : dim           
+  std::vector<sfp> w;  // dimension : dim           
+  
   std::vector<sfp> v1; // dimension : dim
   std::vector<sfp> v2; // dimension : dim
+  std::vector<sfp> v3; // dimension : dim
   
   std::vector<sfp> p0; // dimension : dim
   std::vector<sfp> p1; // dimension : dim
@@ -55,7 +58,7 @@ class ScaledSQMR : public SQMR<fp> {
   std::vector<sfp> q0; // dimension : 2
   std::vector<sfp> q1; // dimension : 2
   
-  std::vector<sfp> QTd; // dimension : numEvals
+  std::vector<sfp> QTv2; // dimension : numEvals
 
   
   void solve_eq();

@@ -44,11 +44,17 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
     x.reserve(mat->Dim());                    
     x.insert(x.begin(),x.capacity(),static_cast<sfp>(0.0));
 
+    w.reserve(mat->Dim());                    
+    w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
+
     v1.reserve(mat->Dim());                    
     v1.insert(v1.begin(),v1.capacity(),static_cast<sfp>(0.0));
     
     v2.reserve(mat->Dim());                    
     v2.insert(v2.begin(),v2.capacity(),static_cast<sfp>(0.0));
+    
+    v3.reserve(mat->Dim());                    
+    v3.insert(v3.begin(),v3.capacity(),static_cast<sfp>(0.0));
     
     p0.reserve(mat->Dim());                    
     p0.insert(p0.begin(),p0.capacity(),static_cast<sfp>(0.0));
@@ -56,8 +62,8 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
     p1.reserve(mat->Dim());                    
     p1.insert(p1.begin(),p1.capacity(),static_cast<sfp>(0.0));
     
-    r1.reserve(mat->Dim());                    
-    r1.insert(r1.begin(),r1.capacity(),static_cast<sfp>(0.0));
+    rin.reserve(mat->Dim());                    
+    rin.insert(rin.begin(),rin.capacity(),static_cast<sfp>(0.0));
 
     q0.reserve(2);                    
     q0.insert(q0.begin(),q0.capacity(),static_cast<sfp>(0.0));
@@ -65,8 +71,8 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
     q1.reserve(2);                    
     q1.insert(q1.begin(),q1.capacity(),static_cast<sfp>(0.0));
 
-    QTd.reserve(this->L.capacity());// L.size() = numEvals;                    
-    
+    QTv2.reserve(this->L.capacity());// L.size() = numEvals;                    
+    QTv2.insert(QTv2.begin(),QTv2.capacity(),static_cast<sfp>(0.0));
     
     
 }
@@ -148,14 +154,72 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
 template<class fp, class sfp>
 void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
 
-//TODO: THERE IS A MAJOR BUG HERE
-//x = sR; return;
+//TODO: 
     auto dim = mat->Dim();
     auto numEvals = this->L.size();
     
+    x.clear(); x.insert(x.begin(),x.capacity(),static_cast<sfp>(0.0));
+    w.clear(); w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
     
+    v1.clear(); v1.insert(v1.begin(),v1.capacity(),static_cast<sfp>(0.0));
+    v2.clear(); v2.insert(v2.begin(),v2.capacity(),static_cast<sfp>(0.0));
+    v3.clear(); v3.insert(v3.begin(),v3.capacity(),static_cast<sfp>(0.0));
+    
+    p0.clear(); p0.insert(p0.begin(),p0.capacity(),static_cast<sfp>(0.0));
+    p1.clear(); p1.insert(p1.begin(),p1.capacity(),static_cast<sfp>(0.0));
+    
+    q0.clear();
+    q0.push_back(static_cast<sfp>(1.0));
+    q0.push_back(static_cast<sfp>(0.0));
+
+    q1.clear();
+    q1.push_back(static_cast<sfp>(1.0));
+    q1.push_back(static_cast<sfp>(0.0));
+
+    QTv2.clear();
+    QTv2.clear(); QTv2.insert(QTv2.begin(),QTv2.capacity(),static_cast<sfp>(0.0));
+    
+    auto one       = static_cast<sfp>( 1.0);
+    auto minus_one = static_cast<sfp>(-1.0);
+    auto zero      = static_cast<sfp>( 0.0);
+
+
+    //v2 = UA\(LA\b); 
+    //[v2,vita2] = qr(v2,0);
+    v2 = sR;
+    auto vita2 = la.nrm2(dim,v2.data(),1);
+    la.scal(dim,(static_cast<sfp>(1.0/vita2)),v2.data(),1);
+
+    //tau2_ = eye(s,s)*vita2;
+    auto tau2_ = vita2;
+    
+    //rin  = UA\(LA\b);
+    rin = sR;
+    
+    auto reig     = static_cast<sfp>(1.0);
+    auto normrin  = static_cast<sfp>(1.0);
+    auto normrinp = static_cast<sfp>(1.0);
+
+
+
+    for(auto iter=0;iter < 2; iter++){
+    
+        // w = v2-sQ*sQ'*v2    
+        la.gemm('T', 'N', 
+						numEvals, 1, dim,
+						one,sQ.data(), ldsQ,v2.data(), dim,zero, QTv2.data(), numEvals);
+						
+				la.gemm('N', 'N', 
+						dim, 1, numEvals,
+						minus_one,sQ.data(), ldsQ,QTv2.data(), numEvals,one, w.data(), dim);	
+						
+				//TODO: problem with matvec. if it is the some input/output vector
+        // wrong results returned			
+    
+    }
+
 //    x = t;
-    t = sR ;    return ; // for testing purpose
+    x = sR ;    return ; // for testing purpose
 
 }
 

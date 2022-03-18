@@ -30,7 +30,7 @@ int main(){
 	int dim{};
 	int numEvals{1};
 	int maxBasis{15};
-	double tol{1e-04};
+	double tol{1e-03};
 	double norm{};
 	LinearAlgebra la;
 	
