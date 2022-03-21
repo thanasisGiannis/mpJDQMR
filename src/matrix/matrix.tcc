@@ -31,6 +31,8 @@ mpjd::Matrix<fp>::Matrix(std::vector<fp> &vals_, std::vector<int> &cols_,
 	m_norm(norm_),
 	m_la(la_)
 {
+  tmp.reserve(m_dim); // mv accumulator
+  tmp.insert(tmp.begin(),tmp.capacity(),static_cast<fp>(0.0));
 //  std::cout << "Matrix" << std::endl;
 }
 	
@@ -50,7 +52,9 @@ mpjd::ScaledMatrix<fp,sfp>::ScaledMatrix(Matrix<fp> &mat_)
 {
   m_cols_norms.reserve(this->m_dim);
   m_vec_sVALS.reserve(this->m_vec_VALS.size());
-  
+  tmp.reserve(this->m_dim); // mv accumulator
+  tmp.insert(tmp.begin(),tmp.capacity(),static_cast<sfp>(0.0));
+
   init_vec_norms(); // Create Diagonal Matrix
 }
 

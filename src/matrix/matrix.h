@@ -30,6 +30,7 @@ class Matrix{
 		fp 								 m_norm{};      // matrix norm
 		int const		       m_dim{}; 	    // dimension of matrix
 		sparseDS_t 				 m_DS{};        // type of sparse matrix representation
+	  std::vector<fp>    tmp; // mv accumulator
 	public:
 		
 		Matrix() = delete;
@@ -52,11 +53,14 @@ class ScaledMatrix : public Matrix<fp>{
 		void matVec_COO(sfp *x, int ldx, sfp *y, int ldy, int dimBlock);
     
 	  std::vector<fp>    m_cols_norms;
+	  std::vector<sfp>    tmp; // mv accumulator
+	  
 	  std::vector<sfp>   m_vec_sVALS; // values to be updated at every step with ita
-
-
+  
+  
 	  void init_vec_norms_COO();
 	  void init_vec_norms();  
+	  
 	public:
 		
 		ScaledMatrix() = delete;

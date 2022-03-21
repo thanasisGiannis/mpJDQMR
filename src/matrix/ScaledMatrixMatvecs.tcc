@@ -12,6 +12,39 @@ void mpjd::ScaledMatrix<fp, sfp>
 		};
 }
 
+// COO implementation of y = Ax
+template <class fp, class sfp>
+void mpjd::ScaledMatrix<fp,sfp>
+::matVec_COO(std::vector<sfp> &x, int ldx,std::vector<sfp> &y, int ldy, int dimBlock){
+	
+	auto xx = x.data();
+	auto yy = tmp.data();
+
+	sfp *vals = m_vec_sVALS.data();
+	int *rows = this->m_vec_ROW_INDEX.data();
+	int *cols = this->m_vec_COL_INDEX.data();
+	
+	std::fill(tmp.begin(), tmp.end(), static_cast<sfp>(0.0));
+	
+	for(auto k=0;k<dimBlock;k++){
+		for(auto i=0;i<m_vec_sVALS.size();i++){
+			yy[rows[i] + k*ldy] += vals[i]*xx[cols[i]+k*ldx];
+		}
+	}
+	
+	y = tmp;
+}
+
+
+
+
+
+
+
+
+
+#if 0
+
 template <class fp, class sfp>
 void mpjd::ScaledMatrix<fp,sfp>
 ::matVec(sfp *x, int ldx,sfp *y, int ldy, int dimBlock){
@@ -26,25 +59,6 @@ void mpjd::ScaledMatrix<fp,sfp>
 }
 
 
-// COO implementation of y = Ax
-template <class fp, class sfp>
-void mpjd::ScaledMatrix<fp,sfp>
-::matVec_COO(std::vector<sfp> &x, int ldx,std::vector<sfp> &y, int ldy, int dimBlock){
-	
-	auto xx = x.data();
-	auto yy = y.data();
-
-	sfp *vals = m_vec_sVALS.data();
-	int *rows = this->m_vec_ROW_INDEX.data();
-	int *cols = this->m_vec_COL_INDEX.data();
-	std::fill(y.begin(), y.end(), 0);
-	
-	for(auto k=0;k<dimBlock;k++){
-		for(auto i=0;i<m_vec_sVALS.size();i++){
-			yy[rows[i] + k*ldy] += vals[i]*xx[cols[i]+k*ldx];
-		}
-	}
-}
 
 template <class fp, class sfp>
 void mpjd::ScaledMatrix<fp,sfp>
@@ -64,4 +78,5 @@ void mpjd::ScaledMatrix<fp,sfp>
 		}
 	}
 }
+#endif
 
