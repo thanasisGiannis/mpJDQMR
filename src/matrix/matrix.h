@@ -67,9 +67,8 @@ class ScaledMatrix : public Matrix<fp>{
 		ScaledMatrix(Matrix<fp> &mat_);	
 		void update_matrix_shift(const fp ita);
 
-		// TODO: 
     // matVec with scaled matrix		
-		void matVec(sfp *x, int ldx, sfp *y, int ldy, int dimBlock); // y = Ax	
+		//void matVec(sfp *x, int ldx, sfp *y, int ldy, int dimBlock); // y = Ax	
 		void matVec(std::vector<sfp> &x, int ldx, std::vector<sfp> &y, int ldy, int dimBlock); // y = Ax	
 		void applyScalMat(fp *x_, int ldx, int rows, int cols); // applying to a vector x the DiagVector ; x = Dx
     void applyScalInvMat(fp *x_, int ldx, int rows, int cols);  // applying to a vector x the inv DiagVector ; x = inv(D)x

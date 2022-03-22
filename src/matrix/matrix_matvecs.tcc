@@ -19,6 +19,8 @@ void mpjd::Matrix<fp>::matVec_COO(std::vector<fp> &x, int ldx,std::vector<fp> &y
 	auto xx = x.data();
 	auto yy = tmp.data();
 
+  
+  
 	fp  *vals = m_vec_VALS.data();
 	int *rows = m_vec_ROW_INDEX.data();
 	int *cols = m_vec_COL_INDEX.data();

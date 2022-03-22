@@ -44,6 +44,24 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
     x.reserve(mat->Dim());                    
     x.insert(x.begin(),x.capacity(),static_cast<sfp>(0.0));
 
+    delta.reserve(mat->Dim());
+    delta.insert(delta.begin(),delta.capacity(),static_cast<sfp>(0.0));
+    
+    r.reserve(mat->Dim());
+    r.insert(r.begin(), r.capacity(),static_cast<sfp>(0.0));
+    
+    d.reserve(mat->Dim());
+    d.insert(d.begin(),d.capacity(),static_cast<sfp>(0.0));
+    
+    w.reserve(mat->Dim());
+    w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
+
+    QTd.reserve(this->L.capacity());// L.size() = numEvals;                    
+    QTd.insert(QTd.begin(),QTd.capacity(),static_cast<sfp>(0.0));
+
+    
+    
+/*
     w.reserve(mat->Dim());                    
     w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
 
@@ -71,8 +89,8 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
     q1.reserve(2);                    
     q1.insert(q1.begin(),q1.capacity(),static_cast<sfp>(0.0));
 
-    QTv2.reserve(this->L.capacity());// L.size() = numEvals;                    
-    QTv2.insert(QTv2.begin(),QTv2.capacity(),static_cast<sfp>(0.0));
+*/
+
     
     
 }
@@ -158,69 +176,202 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     auto dim = mat->Dim();
     auto numEvals = this->L.size();
     
-    x.clear(); x.insert(x.begin(),x.capacity(),static_cast<sfp>(0.0));
-    w.clear(); w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
     
-    v1.clear(); v1.insert(v1.begin(),v1.capacity(),static_cast<sfp>(0.0));
-    v2.clear(); v2.insert(v2.begin(),v2.capacity(),static_cast<sfp>(0.0));
-    v3.clear(); v3.insert(v3.begin(),v3.capacity(),static_cast<sfp>(0.0));
-    
-    p0.clear(); p0.insert(p0.begin(),p0.capacity(),static_cast<sfp>(0.0));
-    p1.clear(); p1.insert(p1.begin(),p1.capacity(),static_cast<sfp>(0.0));
-    
-    q0.clear();
-    q0.push_back(static_cast<sfp>(1.0));
-    q0.push_back(static_cast<sfp>(0.0));
-
-    q1.clear();
-    q1.push_back(static_cast<sfp>(1.0));
-    q1.push_back(static_cast<sfp>(0.0));
-
-    QTv2.clear();
-    QTv2.clear(); QTv2.insert(QTv2.begin(),QTv2.capacity(),static_cast<sfp>(0.0));
-    
-    auto one       = static_cast<sfp>( 1.0);
-    auto minus_one = static_cast<sfp>(-1.0);
-    auto zero      = static_cast<sfp>( 0.0);
+    //x= sR; return;
+    // this should be input in this function
+    sfp ita    = 0.0;
+    sfp thita_ = 0.0; 
+    int qmrMaxIt  = 1000;//dim;//1000;
+    double tol    = 1e-08;
 
 
-    //v2 = UA\(LA\b); 
-    //[v2,vita2] = qr(v2,0);
-    v2 = sR;
-    auto vita2 = la.nrm2(dim,v2.data(),1);
-    la.scal(dim,(static_cast<sfp>(1.0/vita2)),v2.data(),1);
+    sfp Thita_  = static_cast<sfp>(0.0);
+    sfp rho_    = static_cast<sfp>(0.0);
+    sfp sigma   = static_cast<sfp>(0.0);
+    sfp alpha   = static_cast<sfp>(0.0);  
+    sfp normr   = static_cast<sfp>(0.0);
+    sfp Thita   = static_cast<sfp>(0.0);
+    sfp c       = static_cast<sfp>(0.0);
+    sfp g_      = static_cast<sfp>(0.0);
+    sfp r00     = static_cast<sfp>(0.0);
+    sfp rho     = static_cast<sfp>(0.0);
+    sfp vita    = static_cast<sfp>(0.0);
+    sfp g       = static_cast<sfp>(0.0);
+    sfp gama    = static_cast<sfp>(0.0);
+    sfp xi      = static_cast<sfp>(0.0);
+    sfp normt   = static_cast<sfp>(0.0); 
+    sfp f       = static_cast<sfp>(0.0);
+    sfp p       = static_cast<sfp>(0.0);
+    sfp thita   = static_cast<sfp>(0.0);
+    sfp pk      = static_cast<sfp>(0.0);
+    sfp rkm     = static_cast<sfp>(0.0);
+    sfp scalw   = static_cast<sfp>(0.0);
+      
 
-    //tau2_ = eye(s,s)*vita2;
-    auto tau2_ = vita2;
-    
-    //rin  = UA\(LA\b);
-    rin = sR;
-    
-    auto reig     = static_cast<sfp>(1.0);
-    auto normrin  = static_cast<sfp>(1.0);
-    auto normrinp = static_cast<sfp>(1.0);
+    sfp minus_alpha = static_cast<sfp>(0.0);
+    sfp deltaScal1  = static_cast<sfp>(0.0);
+    sfp deltaScal2  = static_cast<sfp>(0.0);
+      
+    sfp BITA   = static_cast<sfp>(0.0);
+    sfp DELTA  = static_cast<sfp>(0.0);
+    sfp GAMA   = static_cast<sfp>(0.0);
+    sfp FI     = static_cast<sfp>(0.0);
+    sfp PSI    = static_cast<sfp>(0.0);
 
 
+    sfp minus_one  = static_cast<sfp>(-1.0);
+    sfp one        = static_cast<sfp>( 1.0);
+    sfp zero       = static_cast<sfp>( 0.0);
 
-    for(auto iter=0;iter < 2; iter++){
     
-        // w = v2-sQ*sQ'*v2    
-        la.gemm('T', 'N', 
-						numEvals, 1, dim,
-						one,sQ.data(), ldsQ,v2.data(), dim,zero, QTv2.data(), numEvals);
-						
-				la.gemm('N', 'N', 
-						dim, 1, numEvals,
-						minus_one,sQ.data(), ldsQ,QTv2.data(), numEvals,one, w.data(), dim);	
-						
-				//TODO: problem with matvec. if it is the some input/output vector
-        // wrong results returned			
+    //double *x = X;
+    //double *b = B;
     
+    std::vector<sfp>& b = sR;
+    std::vector<sfp>& t = x; 
+    
+    t.clear();     t.insert(t.begin(),t.capacity(),static_cast<sfp>(0.0));
+    delta.clear(); delta.insert(delta.begin(), delta.capacity(),static_cast<sfp>(0.0));
+    r.clear();     r.insert(r.begin(), r.capacity(),static_cast<sfp>(0.0));
+    d.clear();     d.insert(d.begin(),d.capacity(),static_cast<sfp>(0.0));
+    w.clear();     w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
+    QTd.clear();   QTd.insert(QTd.begin(),QTd.capacity(),static_cast<sfp>(0.0));
+    
+    /* r = -b */
+    r = b;
+    la.scal(dim,minus_one,r.data(),1);
+    
+    /* d = r*/
+    d = r;
+    /* g = norm(r)*/
+    g = la.nrm2(dim,b.data(),1);
+
+    
+    rho_ = la.dot(dim,r.data(),1,d.data(),1);
+    
+    
+    
+    for(auto iter=0; iter < qmrMaxIt; iter++){
+    
+        //std::cout << la.nrm2(dim,r.data(),1) << std::endl;
+        //w = d;
+        /* d = d - QQTd */
+        la.gemm('T','N',numEvals,1,dim,one,
+                                sQ.data(),ldsQ,d.data(),dim,
+                                zero,QTd.data(),numEvals);
+
+
+        la.gemm('N','N',dim,numEvals,numEvals,minus_one,
+                                      sQ.data(),ldsQ,QTd.data(),numEvals,
+                                      one,d.data(),dim);         
+                    
+        /* w = A*d*/                              
+        mat->matVec(d,dim,w,dim,1);                                                     
+
+        /* w = w-VVTw */
+        la.gemm('T','N',numEvals,1,dim,one,
+                                sQ.data(), ldsQ,w.data(),dim,
+                                zero,QTd.data(),numEvals);
+
+
+        la.gemm('N','N',dim,numEvals,numEvals,minus_one,
+                                sQ.data(),ldsQ,QTd.data(),numEvals,
+                                one,w.data(),dim);
+
+        /* sigma = d'*w */
+        sigma = la.dot(dim,d.data(),1,w.data(),1);
+
+        /* alpha = rho_/sigma */
+        alpha = rho_/sigma;                       
+
+        /* r = r -alpha*w */
+        minus_alpha = minus_one*alpha;
+        la.axpy(dim,minus_alpha,w.data(),1,r.data(),1);
+        
+        /* Thita = norm(r)/g */
+        normr = la.nrm2(dim,r.data(),1);
+        Thita = normr/g;
+        
+        /* c = 1./sqrt(1+Thita*Thita) */
+        c = std::sqrt(one/(one+Thita*Thita));
+        /* g = g*Thita*c */
+        g =g*Thita*c;
+
+        if(iter == 0){
+           g_ = g;
+        }
+        
+        /* delta = (c*c*alpha)*d + (c*c*Thita_*Thita_)*delta  */
+        deltaScal1 = c*c*Thita_*Thita_;   
+        deltaScal2 = c*c*alpha;
+        la.scal(dim,deltaScal1,delta.data(),1);
+        la.axpy(dim,deltaScal2,d.data(),1,delta.data(),1);
+        
+        /*  t  = t + delta */
+        la.axpy(dim,one,delta.data(),1,t.data(),1);
+
+        if(abs(g) < tol){
+           //break; // it stops too early
+        }
+
+        gama = c*c*Thita_; 
+        xi = c*c*alpha;    
+        
+        normt = la.nrm2(dim,r.data(),1); 
+        
+        f = 1 + normt*normt; 
+        PSI = gama*(PSI + FI);
+        FI = gama*gama*FI + xi*xi*sigma;
+        GAMA = GAMA  + 2*PSI + FI;
+        
+        DELTA = gama*DELTA - xi*rho_;
+        BITA = BITA + DELTA;
+        p = ((thita_-ita+2*BITA+GAMA))/f;
+        thita = ita+p;
+        
+        pk = (((thita_)-ita+BITA)*((thita_)-ita+BITA))/f - p*p;
+        rkm = std::sqrt(((g)*(g))/f + pk);
+        
+        if(iter==0){
+         r00 = rkm;
+        }
+
+
+        if(rho_ < tol){
+        //   break; // it stops too early
+        }
+
+
+        rkm = sqrt(g*g/f);
+        
+        if( (g < rkm*std::max(0.99 * std::sqrt(f),std::sqrt(g/g_)))
+                 || (thita > thita_) || rkm<0.1*r00  || g < tol || rkm < tol){
+          break; 
+       }
+
+       /*  w = r./norm(r); */
+       w = r;
+       scalw = la.nrm2(dim,w.data(),1); 
+       scalw = one/scalw;
+       la.scal(dim,scalw,w.data(),1); 
+      
+       /* rho = r'*w; */
+       rho = la.dot(dim,r.data(),1,w.data(),1);
+       vita = rho/rho_;
+      
+       /* d = w + vita*d; */
+       la.scal(dim,vita,d.data(),1);
+       la.axpy(dim,one,w.data(),1,d.data(),1);
+      
+        thita_ = thita;
+        Thita_ = Thita;
+        rho_ = rho;
+        g_ = g;
+
     }
-
-//    x = t;
-    x = sR ;    return ; // for testing purpose
-
+    
+     
+    //t = b;    return ; // for testing purpose
 }
 
 

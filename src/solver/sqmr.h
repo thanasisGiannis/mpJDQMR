@@ -41,24 +41,13 @@ class ScaledSQMR : public SQMR<fp> {
   LinearAlgebra          &la;
 	
 	std::vector<fp>  XX;        // solution to sqmr- dimension : dim x numEvals
-                                
+  std::vector<sfp> x;                              
   /* lower precision data area */
-  std::vector<sfp> x;  // dimension : dim           
-  std::vector<sfp> w;  // dimension : dim           
-  
-  std::vector<sfp> v1; // dimension : dim
-  std::vector<sfp> v2; // dimension : dim
-  std::vector<sfp> v3; // dimension : dim
-  
-  std::vector<sfp> p0; // dimension : dim
-  std::vector<sfp> p1; // dimension : dim
-  
-  std::vector<sfp> rin; // dimension : dim
-  
-  std::vector<sfp> q0; // dimension : 2
-  std::vector<sfp> q1; // dimension : 2
-  
-  std::vector<sfp> QTv2; // dimension : numEvals
+  std::vector<sfp> delta;
+  std::vector<sfp> r;     
+  std::vector<sfp> d;     
+  std::vector<sfp> w;     
+  std::vector<sfp> QTd; // dimension : numEvals
 
   
   void solve_eq();
