@@ -344,7 +344,7 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
 
         rkm = sqrt(g*g/f);
         
-        if( (g < rkm*std::max(0.99 * std::sqrt(f),std::sqrt(g/g_)))
+        if( (g < rkm*std::max(static_cast<fp>(0.99 * std::sqrt(f)),static_cast<fp>(std::sqrt(g/g_))))
                  || (thita > thita_) || rkm<0.1*r00  || g < tol || rkm < tol){
           break; 
        }

@@ -30,7 +30,7 @@ int main(){
 	int dim{};
 	int numEvals{1};
 	int maxBasis{15};
-	double tol{1e-08};
+	double tol{1e-11};
 	double norm{};
 	LinearAlgebra la;
 	
@@ -38,7 +38,7 @@ int main(){
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
 	int maxIters{3*dim};
-	auto *jd = new JD<double,double>{vals, rows, cols, dim,
+	auto *jd = new JD<double,float>{vals, rows, cols, dim,
 			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, 
 			numEvals,	eigenTarget_t::SM, tol, maxBasis, maxIters};
 			
