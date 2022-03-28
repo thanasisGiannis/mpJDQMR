@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include "../blasWrappers/blasWrappers.h"
 
 
 template<class fp> 

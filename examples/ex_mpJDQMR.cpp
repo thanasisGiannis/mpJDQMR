@@ -2,6 +2,8 @@
 #include <string>
 #include <iterator>
 #include "mpjd.h"
+#include "half.hpp"
+
 #include <fstream>
 #include <tgmath.h>
 
@@ -16,7 +18,10 @@ int main(){
 
 //	Matrix<int> mat1{};
 	
+	half a(3.4);
+	a += 0.1;
 	
+	std::cout << a << std::endl;
 	std::vector<double>  vals;//{1.0,1.0,1.0,1.0};
 	std::vector<int>     rows;//{0,0,1,2};
 	std::vector<int>     cols;//{0,1,1,2}; 
@@ -38,7 +43,7 @@ int main(){
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
 	int maxIters{3*dim};
-	auto *jd = new JD<double,float>{vals, rows, cols, dim,
+	auto *jd = new JD<double,half>{vals, rows, cols, dim,
 			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, 
 			numEvals,	eigenTarget_t::SM, tol, maxBasis, maxIters};
 			

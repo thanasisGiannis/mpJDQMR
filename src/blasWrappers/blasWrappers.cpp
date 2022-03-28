@@ -1,6 +1,7 @@
 #include <iostream>
 #include <mkl.h>
 #include "blasWrappers.h"
+#include <vector>
 
 mpjd::LinearAlgebra::LinearAlgebra()
 {
@@ -132,6 +133,122 @@ void mpjd::LinearAlgebra::scal(int dim, float alpha, float *x, int incx){
 	cblas_sscal(dim,alpha,x,incx);
 
 }
+
+
+/* HALF */
+// TODO: add declarations to those functions
+void mpjd::LinearAlgebra::gemm(char transa, char  transb, 
+					int M, int N, int K,
+					half alpha,half* A, int  ldA,
+					half* B, int  ldB,
+					half beta, half* C,int ldC){
+/* !!!!!!!!!!!!!!!!!! 
+THIS ONE NEED OPTIMIZATION
+
+!!!!!!!!!!!!!!!!!! */
+#if 1
+  
+    if(transa == 'N'){
+        gemmAB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+    }else if(transa == 'T'){
+        gemmATB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+    }
+#else
+
+    for(int i=0;i<M;i++){
+      for(int j=0;j<N;j++){
+          half tmp = C[i+j*ldC];;
+          for(int k=0;k<K;k++){
+            if(transa == 'N'){
+                tmp = alpha*A[i+ldA*k]*B[k+j*ldB] + beta*tmp;//C[i+j*ldC];
+            }else if(transa == 'T'){
+                tmp = alpha*A[k+ldA*i]*B[k+j*ldB] + beta*tmp;//C[i+j*ldC];
+            }
+          }
+          C[i+j*ldC] = tmp;
+      }
+    }
+#endif	 
+}
+
+void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
+    					half alpha,half* A, int  ldA,
+				      half* B, int  ldB,
+				      half beta, half* C,int ldC){
+
+        for(int i=0;i<M;i++){
+          for(int j=0;j<N;j++){
+              half tmp = C[i+j*ldC];;
+              for(int k=0;k<K;k++){
+                tmp = alpha*A[i+ldA*k]*B[k+j*ldB] + beta*tmp;//C[i+j*ldC];
+              }
+              C[i+j*ldC] = tmp;
+          }
+        }
+        
+}
+						
+void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
+    					half alpha,half* A, int  ldA,
+				      half* B, int  ldB,
+				      half beta, half* C,int ldC){
+						
+          for(int i=0;i<M;i++){
+            for(int j=0;j<N;j++){
+                half tmp = C[i+j*ldC];;
+                for(int k=0;k<K;k++){
+                    tmp = alpha*A[k+ldA*i]*B[k+j*ldB] + beta*tmp;//C[i+j*ldC];
+                }
+                C[i+j*ldC] = tmp;
+            }
+          }
+}
+
+half mpjd::LinearAlgebra::dot(int dim, half *x, int incx, half *y, int incy){
+    
+    half res=static_cast<half>(0.0);
+    for(int i=0; i<dim; i++){
+      res+= x[i]*y[i];
+    }
+    
+    return res;
+}
+
+void mpjd::LinearAlgebra::axpy(int dim, half alpha, half *x, int incx, half *y, int incy){
+
+  //y = y + alpha * x
+  for(int i=0;i<dim;i++){
+      y[i] += alpha*x[i];
+  }
+
+}
+
+half mpjd::LinearAlgebra::nrm2(int dim, half *x,int incx){ 
+    half res = dot(dim,x,incx,x,incx);
+    return half_float::sqrt(res);
+}
+
+void mpjd::LinearAlgebra::scal(int dim, half alpha, half *x, int incx){
+  for(int i=0;i<dim;i++){
+      x[i] *= alpha;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

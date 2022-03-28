@@ -29,13 +29,13 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
 {
     
     sQ.reserve(this->Q.capacity()); ldsQ = this->ldQ; // Ritz vectors
-    sQ.insert(sQ.begin(),sQ.capacity(),static_cast<fp>(0.0));
+    sQ.insert(sQ.begin(),sQ.capacity(),static_cast<sfp>(0.0));
     
     sQlocked.reserve(this->Qlocked.capacity()); ldsQlocked; // Locked Ritz vectors
-    sQlocked.insert(sQlocked.begin(),sQlocked.capacity(),static_cast<fp>(0.0));
+    sQlocked.insert(sQlocked.begin(),sQlocked.capacity(),static_cast<sfp>(0.0));
     
 	  sR.reserve(mat->Dim()); ldsR = this->ldR;
-    sR.insert(sR.begin(),sR.capacity(),static_cast<fp>(0.0));
+    sR.insert(sR.begin(),sR.capacity(),static_cast<sfp>(0.0));
     
 
     XX.reserve(this->R.capacity()); 
@@ -59,39 +59,6 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
     QTd.reserve(this->L.capacity());// L.size() = numEvals;                    
     QTd.insert(QTd.begin(),QTd.capacity(),static_cast<sfp>(0.0));
 
-    
-    
-/*
-    w.reserve(mat->Dim());                    
-    w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
-
-    v1.reserve(mat->Dim());                    
-    v1.insert(v1.begin(),v1.capacity(),static_cast<sfp>(0.0));
-    
-    v2.reserve(mat->Dim());                    
-    v2.insert(v2.begin(),v2.capacity(),static_cast<sfp>(0.0));
-    
-    v3.reserve(mat->Dim());                    
-    v3.insert(v3.begin(),v3.capacity(),static_cast<sfp>(0.0));
-    
-    p0.reserve(mat->Dim());                    
-    p0.insert(p0.begin(),p0.capacity(),static_cast<sfp>(0.0));
-    
-    p1.reserve(mat->Dim());                    
-    p1.insert(p1.begin(),p1.capacity(),static_cast<sfp>(0.0));
-    
-    rin.reserve(mat->Dim());                    
-    rin.insert(rin.begin(),rin.capacity(),static_cast<sfp>(0.0));
-
-    q0.reserve(2);                    
-    q0.insert(q0.begin(),q0.capacity(),static_cast<sfp>(0.0));
-    
-    q1.reserve(2);                    
-    q1.insert(q1.begin(),q1.capacity(),static_cast<sfp>(0.0));
-
-*/
-
-    
     
 }
       
@@ -179,10 +146,10 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     
     //x= sR; return;
     // this should be input in this function
-    sfp ita    = 0.0;
-    sfp thita_ = 0.0; 
+    sfp ita    = static_cast<sfp>(0.0);
+    sfp thita_ = static_cast<sfp>(0.0);
     int qmrMaxIt  = 1000;//dim;//1000;
-    double tol    = 1e-08;
+    double tol    = 1e-03;
 
 
     sfp Thita_  = static_cast<sfp>(0.0);
