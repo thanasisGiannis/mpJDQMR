@@ -259,7 +259,6 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
     					half alpha,half* A, int  ldA,
 				      half* B, int  ldB,
 				      half beta, half* C,int ldC){
-#if 1
     int blockM = std::min(M,100);
     int blockN = std::min(N,100);
     int blockK = std::min(K,100);
@@ -338,17 +337,6 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
 
     }        
 
-#else						
-          for(int i=0;i<M;i++){
-            for(int j=0;j<N;j++){
-                half tmp = C[i+j*ldC];;
-                for(int k=0;k<K;k++){
-                    tmp = alpha*A[k+ldA*i]*B[k+j*ldB] + beta*tmp;//C[i+j*ldC];
-                }
-                C[i+j*ldC] = tmp;
-            }
-          }
-#endif          
 }
 
 half mpjd::LinearAlgebra::dot(int dim, half *x, int incx, half *y, int incy){
