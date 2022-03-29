@@ -143,11 +143,23 @@ void mpjd::LinearAlgebra::gemm(char transa, char  transb,
 					half* B, int  ldB,
 					half beta, half* C,int ldC){
   
-    if(transa == 'N'){
-        gemmAB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
-    }else if(transa == 'T'){
-        gemmATB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+    if(transb == 'T'){
+        std::cout << "ERROR GEMM" << std::endl;
+        exit(0);
     }
+    
+    switch (transa)
+    {
+      case 'N':
+        gemmAB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+        break;
+      case 'T':
+        gemmATB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+        break;
+      default:
+        exit(0);
+    }
+
 }
 
 void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
