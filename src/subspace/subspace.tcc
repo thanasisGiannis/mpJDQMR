@@ -80,6 +80,10 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarg
 	Q.reserve(dim*numEvals); ldQ = dim; // locked eigenvectors
 	init_vec_zeros(Q,dim*numEvals);
 
+  Qprev.reserve(dim*numEvals); ldQprev = dim; // locked eigenvectors
+	init_vec_zeros(Qprev,dim*numEvals);
+
+
 	L.reserve(numEvals); 				        // locked eigenvalues
 	init_vec_zeros(L,numEvals);
 
@@ -166,6 +170,28 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 
 
 template<class fp>
+void mpjd::Subspace<fp>::Subspace_orth_basis(){
+
+	auto VV = static_cast<fp*>(V.data());
+
+	int rows = dim;
+	int cols = basisSize*numEvals;
+
+  /* V = orth(V) */
+	for(int j=0; j < cols; j++){
+		for(int i=0; i < j ; i++){
+				auto alpha {-la.dot(rows,&VV[0+i*ldV],1,&VV[0+j*ldV],1)};// alpha = V(i)'v
+				la.axpy(rows,alpha,&VV[0+i*ldV],1,&VV[0+j*ldV],1);     	// v = v - V(i)*alpha
+		}	
+		auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
+		la.scal(dim,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    // v = v/norm(v)
+	}
+	
+	
+}
+
+
+template<class fp>
 void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 
 	mat.matVec(w,ldw, Aw, ldAw, blockSize);     // Aw  = A*w
@@ -223,7 +249,8 @@ void mpjd::Subspace<fp>::Subspace_update_basis(){
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	
-	
+  Qprev = Q;
+
 	qq = T; // copy data values from T to qq 
 					// eig replaces QQ with eigenvectors of T
 
@@ -374,39 +401,33 @@ template<class fp>
 void mpjd::Subspace<fp>::Subspace_restart(){
   //std::cout << "Restarting" << std::endl;
   /* restart basis as:
-     V = Q
-     H = diag(L)
+     V = orth([Qprev Q R])
   */
-#if 0  
-  static int nr = 0;
-  std::cout << "Restarting " << nr << " "<< Llocked.size() << std::endl;
-  nr++;
-  static int counter = 0;
-  counter ++ ;
-#endif  
   
-  
-  /* V = Q */
+  /* V = orth([Qprev Q R]) */
   V.clear(); 
+//  V.insert(V.end(), Qprev.begin(), Qprev.end());
   V.insert(V.end(), Q.begin(), Q.end());
+//  V.insert(V.end(), R.begin(), R.end());
+
+  basisSize = 1;
+  
+  Subspace_orth_basis();
+  
   
   /* T = zeros() */
   std::fill(T.begin(), T.end(), static_cast<fp>(0.0));  
 
-  /* T = diag(L) */
-  fp* T_ = static_cast<fp*>(T.data());
-  fp* L_ = static_cast<fp*>(L.data());
-  
-  for(auto j = 0; j < L.size() ; j++){
-    T_[j+j*ldT] = L_[j];
-  }
-
-  basisSize = 1;
   /* AV = A*V */
- 	mat.matVec(V,ldV, Aw, ldAw, blockSize);     // Aw  = A*w
- 	AV.clear();
-  AV.insert(AV.end(),Aw.begin(), Aw.end());
-  
+ 	std::fill(AV.begin(), AV.end(), static_cast<fp>(0.0));
+ 	mat.matVec(V,ldV, AV, ldAV, basisSize*numEvals);     // AV  = A*V
+
+  /* T = V'AV */
+  fp one  = 1.0;
+  fp zero = 0.0;
+  la.gemm('T', 'N', basisSize*numEvals, basisSize*numEvals, dim,
+						one, V.data(), ldV, AV.data(), ldAV, zero, T.data(), ldT);
+		
 }
 
 template<class fp>

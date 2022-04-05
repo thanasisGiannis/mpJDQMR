@@ -13,7 +13,9 @@ class Subspace {
 	/* Next vectors are manipulated by JD class */
 	std::vector<fp> &w; 			int &ldw;			  // new subspace direction
 	
-	std::vector<fp> &Q; int &ldQ;  // ritz vectors
+	std::vector<fp> &Q;     int &ldQ;      // ritz vectors
+	std::vector<fp> Qprev;  int ldQprev;  // prev ritz vectors - for basis restart
+
 	std::vector<fp> q;  int  ldq;  // eigenvectors of T
 	std::vector<fp> qq; int  ldqq; //buffer for syev() 
 	std::vector<fp> LL;						 //buffer for syev()
@@ -39,7 +41,7 @@ class Subspace {
 	LinearAlgebra &la;
 
   void Subspace_restart();
-		
+	void Subspace_orth_basis();	
 public:
 	Subspace()=delete;
 	Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarget_t eigTarget_, 

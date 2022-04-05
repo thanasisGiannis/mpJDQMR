@@ -14,7 +14,8 @@ void mpjd::Matrix<fp>::matVec(std::vector<fp> &x, int ldx,std::vector<fp> &y, in
 
 // COO implementation of y = Ax
 template <class fp>
-void mpjd::Matrix<fp>::matVec_COO(std::vector<fp> &x, int ldx,std::vector<fp> &y, int ldy, int dimBlock){
+void mpjd::Matrix<fp>::matVec_COO(std::vector<fp> &x, int ldx,
+                std::vector<fp> &y, int ldy, int dimBlock){
 	
 	auto xx = x.data();
 	auto yy = tmp.data();
@@ -25,11 +26,12 @@ void mpjd::Matrix<fp>::matVec_COO(std::vector<fp> &x, int ldx,std::vector<fp> &y
 	int *rows = m_vec_ROW_INDEX.data();
 	int *cols = m_vec_COL_INDEX.data();
 	
+	tmp.resize(m_dim*dimBlock);
 	std::fill(tmp.begin(), tmp.end(), 0);
 	
 	for(auto k=0;k<dimBlock;k++){
 		for(auto i=0;i<m_vec_VALS.size();i++){
-			yy[rows[i] + k*ldy] += vals[i]*xx[cols[i]+k*ldx];
+			tmp[rows[i] + k*ldy] += vals[i]*xx[cols[i]+k*ldx];
 		}
 	}
 	y = tmp;
