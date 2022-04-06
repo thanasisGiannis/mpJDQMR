@@ -155,15 +155,17 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 	}
 
 
+  
   /* w = orth(w) */
-	for(int j=0; j < blockSize; j++){
-		for(int i=0; i < j ; i++){
-				auto alpha {-la.dot(rows,&vv[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
-				la.axpy(rows,alpha,&vv[0+i*ldV],1,&vv[0+j*ldV],1);     	// v = v - V(i)*alpha
-		}	
-		auto alpha {la.nrm2(rows,&vv[0+j*ldV],1)}	;
-		la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    // v = v/norm(v)
-	}
+  for(auto k=0;k<3;k++)
+	  for(int j=0; j < blockSize; j++){
+		  for(int i=0; i < j ; i++){
+				  auto alpha {-la.dot(rows,&vv[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
+				  la.axpy(rows,alpha,&vv[0+i*ldV],1,&vv[0+j*ldV],1);     	// v = v - V(i)*alpha
+		  }	
+		  auto alpha {la.nrm2(rows,&vv[0+j*ldV],1)}	;
+		  la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    // v = v/norm(v)
+	  }
 	
 	
 }
@@ -178,14 +180,15 @@ void mpjd::Subspace<fp>::Subspace_orth_basis(){
 	int cols = basisSize*numEvals;
 
   /* V = orth(V) */
-	for(int j=0; j < cols; j++){
-		for(int i=0; i < j ; i++){
-				auto alpha {-la.dot(rows,&VV[0+i*ldV],1,&VV[0+j*ldV],1)};// alpha = V(i)'v
-				la.axpy(rows,alpha,&VV[0+i*ldV],1,&VV[0+j*ldV],1);     	// v = v - V(i)*alpha
-		}	
-		auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
-		la.scal(dim,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    // v = v/norm(v)
-	}
+  for(auto k=0; k<3; k++)
+	  for(int j=0; j < cols; j++){
+		  for(int i=0; i < j ; i++){
+				  auto alpha {-la.dot(rows,&VV[0+i*ldV],1,&VV[0+j*ldV],1)};// alpha = V(i)'v
+				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&VV[0+j*ldV],1);     	// v = v - V(i)*alpha
+		  }	
+		  auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
+		  la.scal(dim,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    // v = v/norm(v)
+	  }
 	
 	
 }
@@ -209,13 +212,9 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 		T = [	T 0; 0 w'Aw]
 	**/
 	
-//	static int k=-1;
-//	k++;
-//	std::cout <<"\%!" << Aw.data() << std::endl;
 	la.gemm('T','N', blockSize, blockSize, dim, one, w_, ldw,
 						Aw_, ldAw, zero, &T_[basisSize*blockSize + basisSize*blockSize*ldT],ldT);	
 						
-//	printMat(T,ldT,10,10,"T0"+std::to_string(k));
 	/* only the diagonal part is of interest */					
 	if(basisSize < 1) return;
 
@@ -226,7 +225,6 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 	la.gemm('T','N', basisSize*blockSize, blockSize, dim, one, V_, ldV,
 						Aw_, ldAw, zero, &T_[0 + basisSize*blockSize*ldT],ldT);	
 	
-//	printMat(T,ldT,10,10,"T1"+std::to_string(k));
 	/**
 		T = [	T V'Aw; w'AV w'Aw]
 	**/
@@ -242,14 +240,13 @@ void mpjd::Subspace<fp>::Subspace_update_basis(){
 	// V = [V w]
 	V.insert(V.end(), w.begin() , w.end());
 	basisSize = basisSize + 1;
-//	std::cout <<"!" << basisSize << std::endl;
+	
 }
 
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	
-  Qprev = Q;
 
 	qq = T; // copy data values from T to qq 
 					// eig replaces QQ with eigenvectors of T
@@ -295,6 +292,10 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	fp one  = static_cast<fp>(1.0);
 	fp zero = static_cast<fp>(0.0);
 	
+	
+	
+	Qprev = Q;
+
 	la.gemm('N', 'N',dim, blockSize, basisSize*blockSize,
 					one, V.data() , ldV, q.data() , ldq, zero, Q.data() , ldQ);
 	
@@ -406,11 +407,11 @@ void mpjd::Subspace<fp>::Subspace_restart(){
   
   /* V = orth([Qprev Q R]) */
   V.clear(); 
-//  V.insert(V.end(), Qprev.begin(), Qprev.end());
+  V.insert(V.end(), Qprev.begin(), Qprev.end());
   V.insert(V.end(), Q.begin(), Q.end());
-//  V.insert(V.end(), R.begin(), R.end());
+  V.insert(V.end(), R.begin(), R.end());
 
-  basisSize = 1;
+  basisSize = 3;
   
   Subspace_orth_basis();
   
