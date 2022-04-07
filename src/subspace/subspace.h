@@ -10,6 +10,9 @@ class Subspace {
 	std::vector<fp> T;  int ldT;  // projected matrix
 	std::vector<fp> Aw; int ldAw; //
 	std::vector<fp> AV; int ldAV;
+	
+	std::vector<fp> QTw; int ldQTw;
+	
 	/* Next vectors are manipulated by JD class */
 	std::vector<fp> &w; 			int &ldw;			  // new subspace direction
 	
@@ -37,6 +40,8 @@ class Subspace {
 	int dim;
 	eigenTarget_t eigTarget;
 	
+	std::vector<int> conv_num;
+	
 	Matrix<fp>    &mat;
 	LinearAlgebra &la;
 
@@ -59,7 +64,7 @@ public:
 	void Subspace_update_basis();
 	void Subspace_projected_mat_eig();
 	void Subspace_eig_residual();
-	bool Check_Convergence_n_Lock(fp tol);
+	bool Check_Convergence(fp tol);
   
   void Subspace_Check_size_and_restart();
   

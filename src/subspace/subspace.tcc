@@ -92,10 +92,17 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarg
 	init_vec_zeros(R,dim*numEvals);
 
 	Qlocked.reserve(dim*numEvals); ldQlocked = dim; // locked eigenvectors
+	Qlocked.clear();
 
+  QTw.reserve(numEvals*numEvals); ldQTw = numEvals ; // locked eigenvectors
+	init_vec_zeros(QTw,numEvals*numEvals);
+
+  
 	Llocked.reserve(numEvals); 								      // locked eigenvalues
+	Llocked.clear();
 
 	Rlocked.reserve(dim*numEvals); ldRlocked = dim; // locked eigen residual 
+	Rlocked.clear();
 	
 	Aw.reserve(dim*blockSize); ldAw = dim;  // tmp vector to used in Av
 	init_vec_zeros<fp>(Aw,dim*blockSize);
@@ -135,6 +142,21 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 	int rows = dim;
 	int cols = basisSize*blockSize;
 
+  
+  #if 0
+  /* w = orth(Qlocked,w) */
+  VV = static_cast<fp*>(Qlocked.data());
+  if(lockedNumEvals > 0){
+	  for(int j=0; j < blockSize; j++){
+		  for(int i=0; i < lockedNumEvals ; i++){
+				  fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'w
+				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldV],1);     	// w = w - V(i)*alpha
+		  }	
+	  }
+	}
+  #endif
+
+  VV = static_cast<fp*>(V.data());
   /* w = orth(V,w) */
 	for(int j=0; j < blockSize; j++){
 		for(int i=0; i < cols ; i++){
@@ -143,19 +165,6 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 		}	
 	}
 
-  /* w = orth(Qlocked,w) */
-  VV = static_cast<fp*>(Qlocked.data());
-	if(Qlocked.size() > 0){
-	  for(int j=0; j < blockSize; j++){
-		  for(int i=0; i < Qlocked.size()/ldQlocked ; i++){
-				  fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
-				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldV],1);     	// v = v - V(i)*alpha
-		  }	
-	  }
-	}
-
-
-  
   /* w = orth(w) */
   for(auto k=0;k<3;k++)
 	  for(int j=0; j < blockSize; j++){
@@ -197,7 +206,12 @@ void mpjd::Subspace<fp>::Subspace_orth_basis(){
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 
+  fp one       = static_cast<fp>( 1.0);
+  fp minus_one = static_cast<fp>(-1.0);
+  fp zero      = static_cast<fp>( 0.0);
+  
 	mat.matVec(w,ldw, Aw, ldAw, blockSize);     // Aw  = A*w
+	
 	AV.insert(AV.end(), Aw.begin() , Aw.end()); // [AV = [AV Aw]
 
 	fp *Aw_ = Aw.data();
@@ -205,8 +219,6 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 	fp *T_  =  T.data();
 	fp *V_  =  V.data();
 		
-	fp one  = static_cast<fp>(1.0);
-	fp zero = static_cast<fp>(0.0);
 
 	/**
 		T = [	T 0; 0 w'Aw]
@@ -333,11 +345,11 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 }
 
 template<class fp>
-bool mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
+bool mpjd::Subspace<fp>::Check_Convergence(fp tol){
 
 	fp *R_ = R.data();
 	fp  rho{};
-	std::vector<int> conv_num{};
+  conv_num.clear();
 	for(auto j=0;j<numEvals;j++){
 		rho = la.nrm2(dim,&R_[0+j*ldR],1);
 
@@ -346,6 +358,22 @@ bool mpjd::Subspace<fp>::Check_Convergence_n_Lock(fp tol){
 		}
 		
 	}
+
+#if 1	
+	if(conv_num.size() == numEvals){
+	
+	    Rlocked = R;
+	    Llocked = L;
+	    Qlocked = Q;
+	    
+	    lockedNumEvals = numEvals; 
+			numEvals       = 0;	
+			blockSize      = 0;
+	    return true;
+	}else{
+	    return false;
+	}
+#endif
 	
 	bool restart = false;
 	while(conv_num.size() > 0){

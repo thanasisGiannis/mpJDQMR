@@ -17,6 +17,7 @@ protected:
 	std::vector<fp> &R;       int &ldR;       // Residual vector
 	std::vector<fp> &Qlocked; int &ldQlocked; // Locked Ritz vectors
 	
+	
 	Matrix<fp>      &mat; // Coefficient Matrix
 
 public:

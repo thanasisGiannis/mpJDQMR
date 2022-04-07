@@ -1,4 +1,5 @@
 #include <iomanip>
+#include <math.h>
 template<class fp, class sfp>
 void mpjd::JD<fp,sfp>::solve(){
 
@@ -7,20 +8,23 @@ void mpjd::JD<fp,sfp>::solve(){
 	basis->Subspace_project_at_new_direction(); // T= w'*A*w // 
 	basis->Subspace_update_basis();             // V = [ V w]
 	basis->Subspace_projected_mat_eig();        // [q,L] = eig(T); Q = V*q;
-	basis->Subspace_eig_residual();             // R = AV*q-Q*L
-
+	
 	
 	for(auto iter=0;iter<maxIters;iter++){
-		// Check Convergence
-	  if(basis->Check_Convergence_n_Lock(tol)){
+    
+    basis->Subspace_eig_residual();             // R = AV*q-Q*L
+
+	  // Check Convergence
+	  if(basis->Check_Convergence(tol)){
 		  return;
 	  }
 
     
     basis->Subspace_Check_size_and_restart();   // V = Q; T = L
-
-    w = sqmr->solve();                          //	w = (I-QlockedQlocked')(I-QQ')(A-L)(I-QlockedQlocked')(I-QQ')\R 
     
+    w = sqmr->solve();                          //	w = (I-QlockedQlocked')(I-QQ')(A-L)(I-QlockedQlocked')(I-QQ')\R 
+   	//w = R;
+   	
 		basis->Subspace_orth_direction();           // w = orth(V,w); w = orth(Qlocked,w)
 
 		basis->Subspace_project_at_new_direction(); // T= w'*A*w // 
@@ -29,7 +33,6 @@ void mpjd::JD<fp,sfp>::solve(){
 
 		basis->Subspace_projected_mat_eig();        // [q,L] = eig(T)
 
-		basis->Subspace_eig_residual();             // R = AV*q-Q*L
 		
 #if 1
 		//std::cout << "\%============== " <<  iter << std::endl;
@@ -39,7 +42,6 @@ void mpjd::JD<fp,sfp>::solve(){
 			std::cout << std::setprecision(3) 
 								<<  std::scientific
 								<< "\%||R(" << iter << "," << j << ")||=" << rho/mat.Norm() << std::endl;
-								
 			//std::cout << "\%L(" << j << ")=" << *(L.data()+j) << std::endl;
 			
 		}

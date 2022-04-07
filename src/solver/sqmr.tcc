@@ -31,7 +31,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
     sQ.reserve(this->Q.capacity()); ldsQ = this->ldQ; // Ritz vectors
     sQ.insert(sQ.begin(),sQ.capacity(),static_cast<sfp>(0.0));
     
-    sQlocked.reserve(this->Qlocked.capacity()); ldsQlocked; // Locked Ritz vectors
+    sQlocked.reserve(this->Qlocked.capacity()); ldsQlocked = ldQlocked_; // Locked Ritz vectors
     sQlocked.insert(sQlocked.begin(),sQlocked.capacity(),static_cast<sfp>(0.0));
     
 	  sR.reserve(mat->Dim()); ldsR = this->ldR;
@@ -121,18 +121,6 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
   }
   mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L.size()); // DR = D\R
   
-  
-//  std::cout << std::endl;
-//  std::cout << sR.size() << std::endl;
-//  std::cout << x.size() << std::endl;  
-//  std::cout << XX.size() << std::endl;
-/*
-  std::cout << "D: " << std::setprecision(16) << *(this->L.data())  << std::endl;
-  std::cout << "F: " << std::setprecision(16) << *sL.data() << std::endl;
-
-  std::cout << std::endl;
-*/
-//  w = this->R;  
   return XX;
 }
 
@@ -143,7 +131,7 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     auto dim = mat->Dim();
     auto numEvals = this->L.size();
     
-    
+    int numLocked = sQlocked.size()/dim;
     //x= sR; return;
     // this should be input in this function
     sfp ita    = static_cast<sfp>(0.0);
@@ -203,6 +191,7 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     d.clear();     d.insert(d.begin(),d.capacity(),static_cast<sfp>(0.0));
     w.clear();     w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
     QTd.clear();   QTd.insert(QTd.begin(),QTd.capacity(),static_cast<sfp>(0.0));
+    int ldQTd = QTd.capacity(); 
     
     /* r = -b */
     r = b;
@@ -217,7 +206,6 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     rho_ = la.dot(dim,r.data(),1,d.data(),1);
     
     
-    
     for(auto iter=0; iter < qmrMaxIt; iter++){
     
         //std::cout << la.nrm2(dim,r.data(),1) << std::endl;
@@ -225,26 +213,29 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
         /* d = d - QQTd */
         la.gemm('T','N',numEvals,1,dim,one,
                                 sQ.data(),ldsQ,d.data(),dim,
-                                zero,QTd.data(),numEvals);
+                                zero,QTd.data(),ldQTd);
 
 
-        la.gemm('N','N',dim,numEvals,numEvals,minus_one,
-                                      sQ.data(),ldsQ,QTd.data(),numEvals,
+        la.gemm('N','N',dim,1,numEvals,minus_one,
+                                      sQ.data(),ldsQ,QTd.data(),ldQTd,
                                       one,d.data(),dim);         
-                    
+
         /* w = A*d*/                              
         mat->matVec(d,dim,w,dim,1);                                                     
 
+        
+        
         /* w = w-VVTw */
         la.gemm('T','N',numEvals,1,dim,one,
                                 sQ.data(), ldsQ,w.data(),dim,
                                 zero,QTd.data(),numEvals);
 
-
-        la.gemm('N','N',dim,numEvals,numEvals,minus_one,
+        la.gemm('N','N',dim,1,numEvals,minus_one,
                                 sQ.data(),ldsQ,QTd.data(),numEvals,
                                 one,w.data(),dim);
 
+
+      
         /* sigma = d'*w */
         sigma = la.dot(dim,d.data(),1,w.data(),1);
 
