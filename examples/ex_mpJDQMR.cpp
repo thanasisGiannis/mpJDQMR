@@ -29,21 +29,27 @@ int main(){
 	std::vector<double>     L{}; 
 	std::vector<double>			R{}; int ldR;
 	
+	
 	int dim{};
 	// TODO: update software to find more than 1 eigenpairs
-	int numEvals{5};
-	int maxBasis{15};
-	double tol{1e-08};
 	double norm{};
 	LinearAlgebra la;
 	
 //	readSymMtx<double>("../matrices/bfwb62.mtx",rows,cols,vals,dim,norm);
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
-	int maxIters{3*dim};
+  mpjd::mpjdParam params;
+  params.numEvals = 5;
+  params.maxIters = 3*dim;
+  params.dim = dim;
+  params.tol = 1e-02;
+	/*
 	auto *jd = new JD<double,float>{vals, rows, cols, dim,
 			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, 
 			numEvals,	eigenTarget_t::SM, tol, maxBasis, maxIters};
+	*/
+	auto *jd = new JD<double,half>{vals, rows, cols, dim,
+			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, params};
 			
 	jd->solve();	
 	//std::cout << Q.size() << std::endl;
@@ -51,7 +57,7 @@ int main(){
 	double *Q_ = Q.data();
 	double  rho{};
 	
-	for(auto j=0;j<numEvals;j++){
+	for(auto j=0;j<params.numEvals;j++){
 	rho = *(L.data() + j);// a.nrm2(dim,&Q_[0+j*ldQ],1);
 	//std::cout << "L(:,j) = " << *(L.data()+j) << std::endl;
 	std::cout << "rho("<<j<<") = " << rho << std::endl;

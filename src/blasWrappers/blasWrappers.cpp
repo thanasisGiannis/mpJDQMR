@@ -167,24 +167,24 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
 				      half* B, int  ldB,
 				      half beta, half* C,int ldC){
 
-    int blockM = std::min(M,100);
-    int blockN = std::min(N,100);
-    int blockK = std::min(K,100);
+    int blockM = std::min(M,20);
+    int blockN = std::min(N,20);
+    int blockK = std::min(K,20);
 
-     #pragma omp parallel       
+     #pragma omp parallel if(blockM>1 && blockN>1)
      {
                 
         half miniC[blockM*blockN];
         half miniA[blockM*blockK];
         half miniB[blockK*blockN];
         
-        #pragma omp parallel for collapse(2) 
+        #pragma omp for collapse(2) if(blockM>1 && blockN>1)
         for(int i=0;i<M;i+=blockM){
           for(int j=0;j<N;j+=blockN){
           
               /* initialize miniC */
-              #pragma omp parallel for 
               for(int ii=0; ii<blockM; ii++){
+                #pragma omp simd
                 for(int jj=0; jj<blockN; jj++){
                     miniC[ii+jj*blockM] = static_cast<half>(0.0);
                     
@@ -195,33 +195,28 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
               for(int k=0;k<K;k+=blockK){
               
                   /* prefetch A */
-                  #pragma omp parallel for 
                   for(int kk=0; kk<blockK; kk++){
-                      for(int ii=0; ii<blockM; ii++){
-                          if( (i+ii < M) && (k+kk < K))
-                            miniA[ii + kk*blockM] = A[i+ii + (k+kk)*ldA];
-                          else
-                            break;//miniA[ii + kk*blockM] = static_cast<half>(0.0);
-                            
+                      #pragma omp simd
+                      for(int ii=0; (ii<blockM) && (i+ii < M); ii++){
+                             miniA[ii + kk*blockM] = A[i+ii + (k+kk)*ldA];
                       }
                   }
                   /* prefetch B */
-                  #pragma omp parallel for 
-                  for(int jj=0; jj<blockN; jj++){
-                      for(int kk=0; kk<blockK; kk++){
-                          if( (k+kk < K) && (j+jj < N))
-                              miniB[kk + jj*blockK] = B[k+kk + (j+jj)*ldB];
-                          else
-                            break;//miniB[kk + jj*blockK] = static_cast<half>(0.0);    
+//                  #pragma omp for 
+                  for(int jj=0; (jj<blockN) && (j+jj < N); jj++){
+                      #pragma omp simd
+                      for(int kk=0; (kk<blockK) && (k+kk < K) ; kk++){
+                          miniB[kk + jj*blockK] = B[k+kk + (j+jj)*ldB];
                       }
                   }
         
                   /* multiply */
-                  #pragma omp parallel for collapse(2) 
-                  for(int ii=0; ii<std::min(M,blockM); ii++){
-                     for(int kk=0; kk< std::min(blockK,K); kk++){
+//                  #pragma omp for collapse(2) 
+                  for(int ii=0; ii<blockM; ii++){
+                     for(int kk=0; kk< blockK; kk++){
                           half aa = miniA[ii+kk*blockM];
-                          for(int jj=0; jj< std::min(blockN,N); jj++){
+                          #pragma omp simd
+                          for(int jj=0; jj< blockN; jj++){
                               miniC[ii+jj*blockM] += alpha*aa*miniB[kk+jj*blockK];
                           }
                       }
@@ -231,13 +226,11 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
               
               
               /* store miniC to C */
-              #pragma omp parallel for 
-              for(int jj=0; jj<blockN; jj++){
-                for(int ii=0; ii<blockM; ii++){
-                    if( (i+ii < M) && ( j+jj<N))
-                        C[i+ii+(j+jj)*ldC] = miniC[ii+jj*blockM] + beta*C[i+ii + (j+jj)*ldC];
-                    else
-                      break;
+//              #pragma omp parallel for 
+              for(int jj=0; (jj<blockN) & (j+jj<N); jj++){
+                for(int ii=0; (ii<blockM) && (i+ii < M); ii++){
+                    C[i+ii+(j+jj)*ldC] = miniC[ii+jj*blockM] + beta*C[i+ii + (j+jj)*ldC];
+                    
                 }
               }
 
@@ -252,84 +245,105 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
     					half alpha,half* A, int  ldA,
 				      half* B, int  ldB,
 				      half beta, half* C,int ldC){
-    int blockM = std::min(M,100);
-    int blockN = std::min(N,100);
-    int blockK = std::min(K,100);
-
-     #pragma omp parallel       
+    int blockM = std::min(M,50);
+    int blockN = std::min(N,50);
+    int blockK = std::min(K,50);
+#if 1
+          #pragma omp parallel for if(M>1 && N>1)
+          for(int jj=0; jj< N; jj++){
+             for(int ii=0; ii<M; ii++){
+                 half cc = static_cast<half>(0.0);// C[ii+jj*ldC];
+                  #pragma omp simd reduction(+:cc)
+                  for(int kk=0; kk<K; kk++){
+                      cc += A[kk+ii*ldA]*B[kk+jj*ldB] ;
+                  }
+                  
+                  C[ii+jj*ldC] = beta*C[ii+jj*ldC] + alpha*cc;
+              }
+          }
+          return;         
+#endif
+     //#pragma omp parallel  if(blockK>1)     
      {
                 
         half miniC[blockM*blockN];
         half miniA[blockM*blockK];
         half miniB[blockK*blockN];
         
-        #pragma omp parallel for collapse(2) 
-        for(int i=0;i<M;i+=blockM){
-          for(int j=0;j<N;j+=blockN){
-          
-              /* initialize miniC */
-              #pragma omp parallel for 
-              for(int ii=0; ii<blockM; ii++){
+        //#pragma omp single
+        {
+          //#pragma omp for collapse(2) if(M>1 && N>1)
+          for(int i=0;i<M;i+=blockM){
+            for(int j=0;j<N;j+=blockN){
+            
+                /* initialize miniC */
+                //#pragma omp parallel for if(bolckN>1 && blockM > 1)
                 for(int jj=0; jj<blockN; jj++){
-                    miniC[ii+jj*blockM] = static_cast<half>(0.0);
-                    
-                }
-              }
-              
-              
-              for(int k=0;k<K;k+=blockK){
-              
-                  /* prefetch A */
-                  #pragma omp parallel for 
-                  for(int kk=0; kk<blockK; kk++){
-                      for(int ii=0; ii<blockM; ii++){
-                          if( (i+ii < M) && (k+kk < K))
-                            miniA[kk + ii*blockM] = A[k+kk + (i+ii)*ldA];
-                          else
-                            break;//miniA[kk + ii*blockM] = static_cast<half>(0.0);
-                            
-                      }
-                  }
-                  /* prefetch B */
-                  #pragma omp parallel for 
-                  for(int jj=0; jj<blockN; jj++){
-                      for(int kk=0; kk<blockK; kk++){
-                          if( (k+kk < K) && (j+jj < N))
-                            miniB[kk + jj*blockK] = B[k+kk + (j+jj)*ldB];
-                          else
-                            break;//miniB[kk + jj*blockK] = static_cast<half>(0.0);    
-                      }
-                  }
-        
-                  /* multiply */
-                  #pragma omp parallel for collapse(2) 
                   for(int ii=0; ii<blockM; ii++){
-                     for(int kk=0; kk<std::min(K,blockK); kk++){
-                          half aa = miniA[kk+ii*blockM];
-                          for(int jj=0; jj<std::min(N,blockN); jj++){
-                              miniC[ii+jj*blockM] += alpha*aa*miniB[kk+jj*blockK];
-                          }
-                      }
+                      miniC[ii+jj*blockM] = static_cast<half>(0.0);
+                      
                   }
-    
-              }
-              
-              
-              /* store miniC to C */
-              #pragma omp parallel for 
-              for(int jj=0; jj<blockN; jj++){
-                for(int ii=0; ii<blockM; ii++){
-                    if( (i+ii < M) && ( j+jj<N))
-                        C[i+ii+(j+jj)*ldC] = miniC[ii+jj*blockM] + beta*C[i+ii + (j+jj)*ldC];
-                    else
-                        break;    
                 }
-              }
+                
+                
+                for(int k=0;k<K;k+=blockK){
+                
+                    /* prefetch A */
+                    //#pragma omp parallel for if(blockM>1 && blockK>1)
+                    for(int ii=0; ii<blockM; ii++){
+                        #pragma omp simd
+                        for(int kk=0; kk<blockK; kk++){
+                            if( (i+ii < M) && (k+kk < K))
+                              miniA[kk + ii*blockM] = A[k+kk + (i+ii)*ldA];
+                            else
+                              break;//miniA[kk + ii*blockM] = static_cast<half>(0.0);
+                              
+                        }
+                    }
+                    /* prefetch B */
+                    //#pragma omp parallel for 
+                    for(int jj=0; jj<blockN; jj++){
+                        #pragma omp simd
+                        for(int kk=0; kk<blockK; kk++){
+                            if( (k+kk < K) && (j+jj < N))
+                              miniB[kk + jj*blockK] = B[k+kk + (j+jj)*ldB];
+                            else
+                              break;//miniB[kk + jj*blockK] = static_cast<half>(0.0);    
+                        }
+                    }
+          
+                    /* make it cache efficient */
+                    /* multiply */
+                    //#pragma omp for collapse(2) 
+                    for(int ii=0; ii<blockM; ii++){
+                       for(int kk=0; kk<std::min(K,blockK); kk++){
+                            half aa = miniA[kk+ii*blockM];
+                            #pragma omp simd
+                            for(int jj=0; jj<std::min(N,blockN); jj++){
+                                miniC[ii+jj*blockM] += alpha*aa*miniB[kk+jj*blockK];
+                            }
+                        }
+                    }
+      
+                }
+                
+                
+                /* store miniC to C */
+                //#pragma omp parallel for 
+                for(int jj=0; jj<blockN; jj++){
+                  #pragma omp simd
+                  for(int ii=0; ii<blockM; ii++){
+                      if( (i+ii < M) && ( j+jj<N))
+                          C[i+ii+(j+jj)*ldC] = miniC[ii+jj*blockM] + beta*C[i+ii + (j+jj)*ldC];
+                      else
+                          break;    
+                  }
+                }
 
-             
+               
+            }
           }
-        }
-
+      }
     }        
 
 }

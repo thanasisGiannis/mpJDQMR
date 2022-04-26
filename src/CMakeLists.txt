@@ -20,6 +20,7 @@ set_target_properties(lib_mpJDQMR PROPERTIES OUTPUT_NAME mpjdqmr)
 set_target_properties(lib_mpJDQMR PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 
 target_link_libraries(lib_mpJDQMR 
+                      #-g
 											-lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core 
 											-lmkl_blacs_intelmpi_ilp64 -lgomp -lpthread -lm -ldl
 										)
