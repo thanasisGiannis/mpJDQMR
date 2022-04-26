@@ -10,6 +10,17 @@
 namespace mpjd{
 
 
+struct mpjdParam {
+  int numEvals         = 1;
+  eigenTarget_t eigTarget = eigenTarget_t::SM;
+ 	double tol           = 1e-08;
+
+  int maxBasis = 15;
+  int maxIters = 1000;
+  int dim      = -1;
+  
+};
+
 
 template<class fp, class sfp>
 class JD {
@@ -50,8 +61,13 @@ public:
 	
 	JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
 			int dim_, sparseDS_t DS_, std::vector<fp> &Q_, int &ldQ_, std::vector<fp> &L_, 
+			std::vector<fp> &R_, int &ldR_, fp norm_, struct mpjdParam &params); 
+/*			
+	JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
+			int dim_, sparseDS_t DS_, std::vector<fp> &Q_, int &ldQ_, std::vector<fp> &L_, 
 			std::vector<fp> &R_, int &ldR_, fp norm_, int nEvals, eigenTarget_t eigTarget_, fp tol_,
 			int maxBasis_, int maxIters_); 
+*/
 
 };
 
