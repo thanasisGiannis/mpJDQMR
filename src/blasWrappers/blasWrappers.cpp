@@ -245,106 +245,25 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
     					half alpha,half* A, int  ldA,
 				      half* B, int  ldB,
 				      half beta, half* C,int ldC){
-    int blockM = std::min(M,50);
-    int blockN = std::min(N,50);
-    int blockK = std::min(K,50);
-#if 1
-          #pragma omp parallel for if(M>1 && N>1)
-          for(int jj=0; jj< N; jj++){
-             for(int ii=0; ii<M; ii++){
-                 half cc = static_cast<half>(0.0);// C[ii+jj*ldC];
-                  #pragma omp simd reduction(+:cc)
-                  for(int kk=0; kk<K; kk++){
-                      cc += A[kk+ii*ldA]*B[kk+jj*ldB] ;
-                  }
-                  
-                  C[ii+jj*ldC] = beta*C[ii+jj*ldC] + alpha*cc;
-              }
-          }
-          return;         
-#endif
-     //#pragma omp parallel  if(blockK>1)     
-     {
-                
-        half miniC[blockM*blockN];
-        half miniA[blockM*blockK];
-        half miniB[blockK*blockN];
-        
-        //#pragma omp single
-        {
-          //#pragma omp for collapse(2) if(M>1 && N>1)
-          for(int i=0;i<M;i+=blockM){
-            for(int j=0;j<N;j+=blockN){
-            
-                /* initialize miniC */
-                //#pragma omp parallel for if(bolckN>1 && blockM > 1)
-                for(int jj=0; jj<blockN; jj++){
-                  for(int ii=0; ii<blockM; ii++){
-                      miniC[ii+jj*blockM] = static_cast<half>(0.0);
-                      
-                  }
-                }
-                
-                
-                for(int k=0;k<K;k+=blockK){
-                
-                    /* prefetch A */
-                    //#pragma omp parallel for if(blockM>1 && blockK>1)
-                    for(int ii=0; ii<blockM; ii++){
-                        #pragma omp simd
-                        for(int kk=0; kk<blockK; kk++){
-                            if( (i+ii < M) && (k+kk < K))
-                              miniA[kk + ii*blockM] = A[k+kk + (i+ii)*ldA];
-                            else
-                              break;//miniA[kk + ii*blockM] = static_cast<half>(0.0);
-                              
-                        }
-                    }
-                    /* prefetch B */
-                    //#pragma omp parallel for 
-                    for(int jj=0; jj<blockN; jj++){
-                        #pragma omp simd
-                        for(int kk=0; kk<blockK; kk++){
-                            if( (k+kk < K) && (j+jj < N))
-                              miniB[kk + jj*blockK] = B[k+kk + (j+jj)*ldB];
-                            else
-                              break;//miniB[kk + jj*blockK] = static_cast<half>(0.0);    
-                        }
-                    }
-          
-                    /* make it cache efficient */
-                    /* multiply */
-                    //#pragma omp for collapse(2) 
-                    for(int ii=0; ii<blockM; ii++){
-                       for(int kk=0; kk<std::min(K,blockK); kk++){
-                            half aa = miniA[kk+ii*blockM];
-                            #pragma omp simd
-                            for(int jj=0; jj<std::min(N,blockN); jj++){
-                                miniC[ii+jj*blockM] += alpha*aa*miniB[kk+jj*blockK];
-                            }
-                        }
-                    }
-      
-                }
-                
-                
-                /* store miniC to C */
-                //#pragma omp parallel for 
-                for(int jj=0; jj<blockN; jj++){
-                  #pragma omp simd
-                  for(int ii=0; ii<blockM; ii++){
-                      if( (i+ii < M) && ( j+jj<N))
-                          C[i+ii+(j+jj)*ldC] = miniC[ii+jj*blockM] + beta*C[i+ii + (j+jj)*ldC];
-                      else
-                          break;    
-                  }
-                }
 
-               
+    /* 
+      Both A and B are accessed by column major 
+      dot products should be cache efficient
+      using simd and reduction in order to accelerate
+    */
+    #pragma omp parallel for collapse(2) if(M>1 && N>1)
+    for(int jj=0; jj< N; jj++){
+       for(int ii=0; ii<M; ii++){
+           half cc = static_cast<half>(0.0);// C[ii+jj*ldC];
+            #pragma omp simd reduction(+:cc)
+            for(int kk=0; kk<K; kk++){
+                cc += A[kk+ii*ldA]*B[kk+jj*ldB] ;
             }
-          }
-      }
-    }        
+            
+            C[ii+jj*ldC] = beta*C[ii+jj*ldC] + alpha*cc;
+        }
+    }
+    
 
 }
 
