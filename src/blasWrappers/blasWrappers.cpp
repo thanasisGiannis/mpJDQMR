@@ -171,7 +171,7 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
     int blockN = std::min(N,20);
     int blockK = std::min(K,80);
 
-     #pragma omp parallel //if(blockM>1 && blockN>1)
+     #pragma omp parallel if(blockM>1 && blockN>1)
      {
                 
         half miniC[blockM*blockN];
@@ -183,8 +183,6 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
           for(int j=0;j<N;j+=blockN){
           
               /* initialize miniC */
-              //memset(miniA,0,sizeof(half)*blockM*blockK);
-              //memset(miniB,0,sizeof(half)*blockK*blockN);
               memset(miniC,0,sizeof(half)*blockM*blockN);
               
               
@@ -204,7 +202,6 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
         
                   /* multiply */
                   #pragma omp for collapse(2) 
-                  //#pragma omp unroll //parallel for
                   for(int ii=0; ii<blockM; ii++){
                      for(int kk=0; kk< blockK; kk++){
                           half aa = miniA[ii+kk*blockM];
@@ -219,7 +216,7 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
               
               
               /* store miniC to C */
-               #pragma omp for 
+              #pragma omp for 
               for(int jj=0; (jj<blockN) & (j+jj<N); jj++){
                 #pragma omp unroll
                 for(int ii=0; (ii<blockM) && (i+ii < M); ii++){
