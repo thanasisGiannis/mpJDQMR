@@ -2,6 +2,8 @@
 #include <mkl.h>
 #include "blasWrappers.h"
 #include <vector>
+#include <omp.h>
+
 
 mpjd::LinearAlgebra::LinearAlgebra()
 {
@@ -162,72 +164,101 @@ void mpjd::LinearAlgebra::gemm(char transa, char  transb,
 
 }
 
+#pragma omp declare reduction(+: half : omp_out += omp_in)
+
 void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
     					half alpha,half* A, int  ldA,
 				      half* B, int  ldB,
 				      half beta, half* C,int ldC){
 
-    int blockM = std::min(M,20);
-    int blockN = std::min(N,20);
-    int blockK = std::min(K,80);
+    if(M==1 && N ==1){
+      C[0] = dot(K, A,1, B, 1);
+      return;
+    }
 
-     #pragma omp parallel if(blockM>1 && blockN>1)
-     {
+    int blockM = std::min(M,2048);
+    int blockN = std::min(N,16);
+    int blockK = std::min(K,16);
+
+    //std::cout << blockM << " " << blockN << " " << blockK << " " << std::endl;
+    #pragma omp parallel if(blockM>1 || blockN>1)
+    {
+      //std::cout << omp_get_num_threads() << std::endl;        
+      half miniC[blockM*blockN];
+      half miniA[blockM*blockK];
+      half miniB[blockK*blockN];
+      
+      #pragma omp for collapse(2) //if(blockM>1 && blockN>1)
+      for(int i=0;i<M;i+=blockM){
+        for(int j=0;j<N;j+=blockN){
+        
+            /* initialize miniC */
+            memset(miniC,0,sizeof(half)*blockM*blockN);
+            
+            
+            for(int k=0;k<K;k+=blockK){
+            
+                /* prefetch A */
+                int sA    = std::min(M-i,blockM);
+                int kkEnd = std::min(blockK,K-k);
+                int iiEnd = std::min(blockM,M-i);
                 
-        half miniC[blockM*blockN];
-        half miniA[blockM*blockK];
-        half miniB[blockK*blockN];
-        
-        #pragma omp for collapse(2) //if(blockM>1 && blockN>1)
-        for(int i=0;i<M;i+=blockM){
-          for(int j=0;j<N;j+=blockN){
-          
-              /* initialize miniC */
-              memset(miniC,0,sizeof(half)*blockM*blockN);
-              
-              
-              for(int k=0;k<K;k+=blockK){
-              
-                  /* prefetch A */
-                  int sA = std::min(M-i,blockM);
-                  for(int kk=0; kk<blockK; kk++){
-                      memcpy(&miniA[0 + kk*blockM],&A[i+(k+kk)*ldA],sA*sizeof(half));
+                for(int ii=0; ii<iiEnd; ii++){
+                  #pragma omp simd
+                  for(int kk=0; kk<kkEnd; kk++){
+                    miniA[kk + ii*blockK ] = A[(i+ii)+(k+kk)*ldA];
                   }
-                  
-                  /* prefetch B */
-                  int sB = std::min(K-k,blockK);
-                  for(int jj=0; (jj<blockN) && (j+jj < N); jj++){
-                      memcpy(&miniB[0 + jj*blockM],&B[k+(j+jj)*ldB],sB*sizeof(half));
-                  }
-        
-                  /* multiply */
-                  #pragma omp for collapse(2) 
-                  for(int ii=0; ii<blockM; ii++){
-                     for(int kk=0; kk< blockK; kk++){
-                          half aa = miniA[ii+kk*blockM];
-                          #pragma omp unroll
-                          for(int jj=0; jj< blockN; jj++){
-                              miniC[ii+jj*blockM] += alpha*aa*miniB[kk+jj*blockK];
-                          }
-                      }
-                  }
-    
-              }
-              
-              
-              /* store miniC to C */
-              #pragma omp for 
-              for(int jj=0; (jj<blockN) & (j+jj<N); jj++){
-                #pragma omp unroll
-                for(int ii=0; (ii<blockM) && (i+ii < M); ii++){
-                    C[i+ii+(j+jj)*ldC] = miniC[ii+jj*blockM] + beta*C[i+ii + (j+jj)*ldC];
-                    
                 }
-              }
+                
+                
+                /* prefetch B */
+                int sB    = std::min(K-k,blockK);
+                int jjEnd = std::min(blockN,N-j);
+                //#pragma omp for 
+                //#pragma omp simd
+                #pragma omp simd
+                for(int jj=0; jj<jjEnd; jj++){
+                    memcpy(&miniB[0 + jj*blockM],&B[k+(j+jj)*ldB],sB*sizeof(half));
+                }
+      
+                
+                #pragma omp parallel for collapse(2) if(blockM>1 || blockN>1)
+                for(int ii=0; ii<blockM; ii++){
+                  for(int jj=0; jj< blockN; jj++){
+                    half cc = static_cast<half>(0.0);
+                    #pragma omp simd reduction (+:cc)
+                    for(int kk=0; kk< blockK; kk++){
+                           cc += alpha*miniA[ii*blockK+kk]*miniB[kk+jj*blockK];
+                      }
+                    miniC[ii+jj*blockM] = cc;  
+                  }
+                }
+                
+                
 
-             
-          }
+            }
+            
+            
+            /* store miniC to C */
+            for(int jj=0; (jj<blockN) & (j+jj<N); jj++){
+            
+              auto iiEnd = std::min(blockM,M-i);
+              #pragma omp simd
+              for(int ii=0; ii<iiEnd; ii++){
+                  C[i+ii+(j+jj)*ldC] = beta*C[i+ii + (j+jj)*ldC];
+                  
+              }
+            
+              #pragma omp simd
+              for(int ii=0; ii<iiEnd; ii++){
+                  C[i+ii+(j+jj)*ldC] += miniC[ii+jj*blockM];
+                  
+              }
+            }
+
+           
         }
+      }
 
     }        
 }
@@ -242,15 +273,16 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
       dot products should be cache efficient
       using simd and reduction in order to accelerate
     */
-    #pragma omp parallel for collapse(2) if(M>1 && N>1)
+    #pragma omp parallel for collapse(2) if(M>1 || N>1)
     for(int jj=0; jj< N; jj++){
        for(int ii=0; ii<M; ii++){
-           half cc = static_cast<half>(0.0);// C[ii+jj*ldC];
+            half cc = static_cast<half>(0.0);// C[ii+jj*ldC];
+            
+            //#pragma omp simd reduction(+:cc)
             #pragma omp simd reduction(+:cc)
             for(int kk=0; kk<K; kk++){
                 cc += A[kk+ii*ldA]*B[kk+jj*ldB] ;
             }
-            
             C[ii+jj*ldC] = beta*C[ii+jj*ldC] + alpha*cc;
         }
     }
@@ -261,7 +293,7 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
 half mpjd::LinearAlgebra::dot(int dim, half *x, int incx, half *y, int incy){
     
     half res=static_cast<half>(0.0);
-    #pragma omp parallel for reduction(+:res)
+    #pragma omp simd reduction(+:res)
     for(int i=0; i<dim; i++){
       res+= x[i]*y[i];
     }
@@ -272,7 +304,7 @@ half mpjd::LinearAlgebra::dot(int dim, half *x, int incx, half *y, int incy){
 void mpjd::LinearAlgebra::axpy(int dim, half alpha, half *x, int incx, half *y, int incy){
 
   //y = y + alpha * x
-  #pragma omp parallel for
+  #pragma omp simd
   for(int i=0;i<dim;i++){
       y[i] += alpha*x[i];
   }
@@ -286,7 +318,7 @@ half mpjd::LinearAlgebra::nrm2(int dim, half *x,int incx){
 
 void mpjd::LinearAlgebra::scal(int dim, half alpha, half *x, int incx){
 
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for(int i=0;i<dim;i++){
       x[i] *= alpha;
   }

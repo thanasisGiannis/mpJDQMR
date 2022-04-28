@@ -39,7 +39,7 @@ int main(){
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
   mpjd::mpjdParam params;
-  params.numEvals = 5;
+  params.numEvals = 32;
   params.maxIters = 3*dim;
   params.dim = dim;
   params.tol = 1e-02;
