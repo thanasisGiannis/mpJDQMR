@@ -36,7 +36,15 @@ namespace mpjd{
         
         }
 
-};
+  };
 
+
+  class basisStatistics : public mpjdStatistics{
+
+  public:
+    void updateRestarts(int counter){ (this->stats).m_numRestarts+=counter;}
+    void updateOrthogonalizations(int counter){ (this->stats).m_numOrth+=counter;}
+
+  };
 
 }

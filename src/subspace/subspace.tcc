@@ -176,7 +176,8 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 		  la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    // v = v/norm(v)
 	  }
 	
-	
+	updateOrthogonalizations(basisSize*blockSize);
+
 }
 
 
@@ -199,7 +200,8 @@ void mpjd::Subspace<fp>::Subspace_orth_basis(){
 		  la.scal(dim,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    // v = v/norm(v)
 	  }
 	
-	
+	updateOrthogonalizations(basisSize*numEvals);
+
 }
 
 
@@ -456,6 +458,9 @@ void mpjd::Subspace<fp>::Subspace_restart(){
   fp zero = 0.0;
   la.gemm('T', 'N', basisSize*numEvals, basisSize*numEvals, dim,
 						one, V.data(), ldV, AV.data(), ldAV, zero, T.data(), ldT);
+						
+						
+  updateRestarts(1);
 		
 }
 

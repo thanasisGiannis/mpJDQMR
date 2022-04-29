@@ -41,7 +41,7 @@ int main(){
   params.numEvals = 1;
   params.maxIters = 3*dim;
   params.dim = dim;
-  params.tol = 1e-02;
+  params.tol = 1e-08;
   params.printStats = true;
 
 	auto *jd = new JD<double,half>{vals, rows, cols, dim,

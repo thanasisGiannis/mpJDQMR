@@ -4,7 +4,7 @@
 
 namespace mpjd{
 template<class fp>
-class Subspace {
+class Subspace : public basisStatistics {
 
 	std::vector<fp> V;  int ldV; 	// subspace basis
 	std::vector<fp> T;  int ldT;  // projected matrix
