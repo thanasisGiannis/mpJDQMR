@@ -30,9 +30,14 @@ namespace mpjd{
 
   public:
     void printStats(){
+            std::cout << "======================================" << std::endl;
+            std::cout << "EigenSolver Statistics" << std::endl;
+            std::cout << "======================================" << std::endl;
+            
             std::cout << "#matVecs            = " << (this->stats).m_matVecs     << std::endl;
             std::cout << "#Restarts           = " << (this->stats).m_numRestarts << std::endl;
             std::cout << "#Orthogonilizations = " << (this->stats).m_numOrth     << std::endl;
+            std::cout << "--------------------------------------" << std::endl;
         
         }
 
