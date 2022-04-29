@@ -2,6 +2,9 @@
 template <class fp, class sfp>
 void mpjd::ScaledMatrix<fp, sfp>
 ::matVec(std::vector<sfp> &x, int ldx,std::vector<sfp> &y, int ldy, int dimBlock){
+
+  mpjd::matrixStatistics::updateMatVecs(dimBlock);
+	
 	switch (this->m_DS){
 		case sparseDS_t::COO:
 			matVec_COO(x,ldx,y,ldy, dimBlock);

@@ -21,7 +21,7 @@ void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
 // so dim = col_index(end)
 template <class fp> 
 mpjd::Matrix<fp>::Matrix(std::vector<fp> &vals_, std::vector<int> &cols_,
-					 std::vector<int> &rows_, int dim_,  sparseDS_t DS_ , fp norm_, LinearAlgebra &la_ )
+					 std::vector<int> &rows_, int dim_,  sparseDS_t DS_ , fp norm_, LinearAlgebra &la_)	
 :	
 	
 	m_dim(dim_),

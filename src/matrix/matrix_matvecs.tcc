@@ -1,6 +1,8 @@
 /* CHOOSE SPARSE MATVEC ALGORITHM TO USE */
 template <class fp>
 void mpjd::Matrix<fp>::matVec(std::vector<fp> &x, int ldx,std::vector<fp> &y, int ldy, int dimBlock){
+  
+  updateMatVecs(dimBlock);
 	switch (m_DS){
 		case sparseDS_t::COO:
 			matVec_COO(x,ldx,y,ldy, dimBlock);

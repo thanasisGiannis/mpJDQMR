@@ -14,9 +14,8 @@ void mpjd::JD<fp,sfp>::solve(){
     
     basis->Subspace_eig_residual();             // R = AV*q-Q*L
 
-	  // Check Convergence
 	  if(basis->Check_Convergence(tol)){
-		  return;
+		  break;
 	  }
 
     
@@ -49,6 +48,9 @@ void mpjd::JD<fp,sfp>::solve(){
 #endif
 	}
 	
+	if(parameters.printStats){
+  	printStats();
+  }
 }
 
 

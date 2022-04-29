@@ -5,28 +5,34 @@
 //#include "../matrix/smatrix.h"
 #include "../subspace/subspace.h"
 #include "../solver/sqmr.h"
+#include "../include/mpjd_stats.h"
 
 #include <memory>
 namespace mpjd{
 
 
 struct mpjdParam {
-  int numEvals         = 1;
-  eigenTarget_t eigTarget = eigenTarget_t::SM;
- 	double tol           = 1e-08;
+ 	double tol = 1e-08;
 
+  eigenTarget_t eigTarget = eigenTarget_t::SM;
+
+  int numEvals = 1;
   int maxBasis = 15;
   int maxIters = 1000;
   int dim      = -1;
   
+  bool printStats = false;
 };
 
 
 template<class fp, class sfp>
-class JD {
+class JD 
+: public jdStatistics
+{
 	
-	eigenTarget_t  eigTarget;   // Smallest by absolute value 
-	//int 				   numEvals;    // number of wanted eigenvalues
+  eigenTarget_t  eigTarget; // Smallest by absolute value 
+	struct mpjdParam &parameters;
+	
 	int 					 maxIters;
 	int						 dim;
 	fp						 tol;

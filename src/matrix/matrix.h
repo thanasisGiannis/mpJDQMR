@@ -2,6 +2,8 @@
 #include "../blasWrappers/blasWrappers.h"
 #include <vector>
 #include <iterator>
+#include "../include/mpjd_stats.h"
+
 // matrix interface class
 // needed by main program and JD main iteration
 namespace mpjd{
@@ -15,7 +17,7 @@ enum class sparseDS_t
 			};
 			
 template <class fp>
-class Matrix{
+class Matrix : public matrixStatistics{
 	// sparse matrix information of a general matrix A
 	// functionality of matvec for different sparse representations
 	private:
@@ -42,7 +44,7 @@ class Matrix{
 		int Dim();
 		fp Norm();
 		
-	};
+};
 
 
 template <class fp,class sfp>

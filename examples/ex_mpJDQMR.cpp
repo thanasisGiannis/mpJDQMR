@@ -31,7 +31,6 @@ int main(){
 	
 	
 	int dim{};
-	// TODO: update software to find more than 1 eigenpairs
 	double norm{};
 	LinearAlgebra la;
 	
@@ -39,20 +38,16 @@ int main(){
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
   mpjd::mpjdParam params;
-  params.numEvals = 32;
+  params.numEvals = 1;
   params.maxIters = 3*dim;
   params.dim = dim;
   params.tol = 1e-02;
-	/*
-	auto *jd = new JD<double,float>{vals, rows, cols, dim,
-			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, 
-			numEvals,	eigenTarget_t::SM, tol, maxBasis, maxIters};
-	*/
+  params.printStats = true;
+
 	auto *jd = new JD<double,half>{vals, rows, cols, dim,
 			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, params};
 			
 	jd->solve();	
-	//std::cout << Q.size() << std::endl;
 	
 	double *Q_ = Q.data();
 	double  rho{};
