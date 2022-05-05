@@ -21,7 +21,8 @@ struct mpjdParam {
   int maxIters = 1000;
   int dim      = -1;
   
-  bool printStats = false;
+  bool printStats     = false;
+  bool printIterStats = false;
 };
 
 
@@ -60,6 +61,7 @@ class JD
 	
 	bool Check_Convergence();
 	
+	void printIterationStats(int loopIter);
 public:
 										 
 	void solve();									 

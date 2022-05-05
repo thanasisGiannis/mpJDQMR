@@ -42,7 +42,9 @@ int main(){
   params.maxIters = 3*dim;
   params.dim = dim;
   params.tol = 1e-08;
-  params.printStats = true;
+  params.printStats     = true;
+  params.printIterStats = false;
+
 
 	auto *jd = new JD<double,half>{vals, rows, cols, dim,
 			sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, params};

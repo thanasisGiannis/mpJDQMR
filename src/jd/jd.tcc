@@ -24,8 +24,22 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_, std::vector<int> row_index_, std::ve
 	                                           Qlocked,ldQlocked,la)))),										
 	eigTarget(params.eigTarget)
 					
-{
+{}
 
 
+
+template<class fp, class sfp>
+void mpjd::JD<fp,sfp>::printIterationStats(int loopIter){
+
+
+    for(auto j=0;j<R.size()/dim;j++){
+	    fp *R_ = R.data();
+	    fp rho = la.nrm2(dim,&R_[0+j*ldR],1);
+	    std::cout << std::setprecision(3) 
+						    <<  std::scientific
+						    << "\%||R(" << loopIter << "," << j << ")||=" << rho/mat.Norm() << std::endl;
+	    
+    }
 }
+
 
