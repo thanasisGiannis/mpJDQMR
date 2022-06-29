@@ -3,9 +3,10 @@
 
 namespace mpjd{
   struct statistics{
-      int m_matVecs     = 0; // number of matrix-vector (block matVec is assumed as block dimension matVecs)
-      int m_numRestarts = 0; // number of basis restart
-      int m_numOrth     = 0; // number of vectors orthogonalized
+      int m_matVecs        = 0; // number of matrix-vector (block matVec is assumed as block dimension matVecs)
+      int m_numRestarts    = 0; // number of basis restart
+      int m_numOrth        = 0; // number of vectors orthogonalized
+      int m_innerLoopIters = 0; // number of total iterations for the inner loop
   };
 
 
@@ -34,9 +35,11 @@ namespace mpjd{
             std::cout << "EigenSolver Statistics" << std::endl;
             std::cout << "======================================" << std::endl;
             
-            std::cout << "#matVecs            = " << (this->stats).m_matVecs     << std::endl;
-            std::cout << "#Restarts           = " << (this->stats).m_numRestarts << std::endl;
-            std::cout << "#Orthogonilizations = " << (this->stats).m_numOrth     << std::endl;
+            std::cout << "#matVecs            = " << (this->stats).m_matVecs        << std::endl;
+            std::cout << "#Restarts           = " << (this->stats).m_numRestarts    << std::endl;
+            std::cout << "#Orthogonilizations = " << (this->stats).m_numOrth        << std::endl;
+            std::cout << "#TotalInnerLoops    = " << (this->stats).m_innerLoopIters << std::endl;
+            
             std::cout << "--------------------------------------" << std::endl;
         
         }
@@ -49,7 +52,7 @@ namespace mpjd{
   public:
     void updateRestarts(int counter){ (this->stats).m_numRestarts+=counter;}
     void updateOrthogonalizations(int counter){ (this->stats).m_numOrth+=counter;}
-
+    void updateNumInnerLoop(int counter){ (this->stats).m_innerLoopIters+=counter;}
   };
 
 }

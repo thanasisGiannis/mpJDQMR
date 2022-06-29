@@ -27,9 +27,7 @@ struct mpjdParam {
 
 
 template<class fp, class sfp>
-class JD 
-: public jdStatistics
-{
+class JD : public basisStatistics, public jdStatistics {
 	
   eigenTarget_t  eigTarget; // Smallest by absolute value 
 	struct mpjdParam &parameters;

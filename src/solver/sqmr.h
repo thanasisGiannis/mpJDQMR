@@ -26,7 +26,7 @@ public:
 	      std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
 	      std::vector<fp> &Qlocked_, int &ldQlocked_);
 	
-	virtual std::vector<fp> solve();
+	virtual std::vector<fp> solve(int &iters);
 };
 
 
@@ -51,7 +51,7 @@ class ScaledSQMR : public SQMR<fp> {
   std::vector<sfp> QTd; // dimension : numEvals
 
   
-  void solve_eq();
+  int solve_eq();
 public:
    
 	/* ========= */
@@ -60,7 +60,7 @@ public:
 	      std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
 	      std::vector<fp> &Qlocked_, int &ldQlocked_, LinearAlgebra &la_);
 	
-	virtual std::vector<fp> solve();
+	virtual std::vector<fp> solve(int &iters);
 };
 
 }

@@ -12,7 +12,8 @@ mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int &ldQ_,
 	
 
 template<class fp>
-std::vector<fp> mpjd::SQMR<fp>::solve(){
+std::vector<fp> mpjd::SQMR<fp>::solve(int &iters){
+  iters = 0;
   return R;
 }
 
@@ -64,7 +65,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
       
 
 template<class fp, class sfp>
-std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
+std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
   /* TODO: Implement sQMR Algorithm Steps in Scaled Matrix */
 
 
@@ -88,7 +89,6 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
   
   auto iDR  = this->R;
   int ldiDR = this->ldR;
-
   /* Call the actual solver */
   for(auto i=0; i < this->L.size(); i++){
     /* Change Matrix shift*/
@@ -112,7 +112,8 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
 
     // at this point right hand side vectors are up to date with the diagonal sca
     //
-    solve_eq();
+    int innerIters = solve_eq();
+    iters += innerIters;
     /* Casting output vectors into the outer loop precision */  
     XX.resize(XX.size()+mat->Dim());
     std::transform(x.begin(),x.end(), XX.end()-mat->Dim(),to_fp);
@@ -125,9 +126,9 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(){
 }
 
 template<class fp, class sfp>
-void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
+int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
 
-//TODO: 
+    
     auto dim = mat->Dim();
     auto numEvals = this->L.size();
     
@@ -205,11 +206,9 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     
     rho_ = la.dot(dim,r.data(),1,d.data(),1);
     
-    
-    for(auto iter=0; iter < qmrMaxIt; iter++){
-    
-        //std::cout << la.nrm2(dim,r.data(),1) << std::endl;
-        //w = d;
+    auto iter = 0;
+    for(iter; iter < qmrMaxIt; iter++){
+        
         /* d = d - QQTd */
         la.gemm('T','N',numEvals,1,dim,one,
                                 sQ.data(),ldsQ,d.data(),dim,
@@ -328,7 +327,7 @@ void mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
 
     }
     
-     
+    return iter;
     //t = b;    return ; // for testing purpose
 }
 

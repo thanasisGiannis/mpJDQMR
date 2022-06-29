@@ -43,7 +43,7 @@ int main(){
   params.dim = dim;
   params.tol = 1e-08;
   params.printStats     = true;
-  params.printIterStats = false;
+  params.printIterStats = true;
 
 
 	auto *jd = new JD<double,half>{vals, rows, cols, dim,
@@ -55,8 +55,8 @@ int main(){
 	double  rho{};
 	
 	for(auto j=0;j<params.numEvals;j++){
-	rho = *(L.data() + j);// a.nrm2(dim,&Q_[0+j*ldQ],1);
-	//std::cout << "L(:,j) = " << *(L.data()+j) << std::endl;
+	rho = *(L.data() + j);
+	
 	std::cout << "rho("<<j<<") = " << rho << std::endl;
 		
 	}
