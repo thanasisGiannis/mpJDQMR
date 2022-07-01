@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include "../../include/half.hpp"
+//TODO: FILE FORMAT
 using half_float::half;
 
 namespace mpjd {
