@@ -2,83 +2,88 @@
 #include <iostream>
 #include <string>
 #include "../../include/half.hpp"
-//TODO: FILE FORMAT
-using half_float::half;
 
 namespace mpjd {
 
 enum class eigenTarget_t {
-							/* Target of wanted eigenvalues */
-							SM, // smallest by absolute value
-							LM // bigest by largest absolute value 
-							/* future implementations */
-							//SR // smallest real
-							//BR // bigest real
-							
-						};
+    /* Target of wanted eigenvalues */
+    SM, // smallest by absolute value
+    LM // bigest by largest absolute value 
+    /* future implementations */
+    //SR // smallest real
+    //BR // bigest real
+};
 
 
 
 class LinearAlgebra {
-public:
-	
-	LinearAlgebra();
+  public:
+	  LinearAlgebra();
+	  std::string getTarget();
 
-	std::string getTarget();
-	
-	
-	void eig(int n, double *a, int  lda, double *l, int numEvals, eigenTarget_t target);
-	
-	
-	/* NEEDED IN MORE THAN ONE PRECISION FOR THE INNER SOLVER */
-  /* DOUBLE */
-	void gemm(char transa, char  transb, 
-						int m, int n, int k,
-						double alpha,double* a, int  lda,
-						double* b, int  ldb,
-						double beta, double* c,int ldc);
+	  void eig(const int n, double *a, const int  lda, 
+        double *l, const int numEvals, eigenTarget_t target);
 
-	double dot(int dim, double *x, int incx, double *y, int incy);
-	void   axpy(int dim, double alpha, double *x, int incx, double *y, int incy);
-	double nrm2(int dim, double *x,int incx);
-	void   scal(int dim, double alpha, double *x, int incx);
+	  /* NEEDED IN MORE THAN ONE PRECISION FOR THE INNER SOLVER */
+    /* DOUBLE */
+	  void gemm(const char transa, const char  transb,
+      const  int m, const int n, const int k, 
+      const double alpha, const double* a, const int lda,
+      const double* b, const int ldb,
+      const double beta, double* c, const int ldc); 
+
+	  double dot(const int dim, const double *x, const int incx,
+	      const double *y, const int incy);
+	  void axpy(const int dim, const double alpha, 
+	      const double *x, const int incx, double *y, const int incy);
+	  double nrm2(const int dim, const double *x, const int incx);
+	  void scal(const int dim, const double alpha, 
+	      double *x, const int incx);
 
 
 
-  /* FLOAT */
-	void gemm(char transa, char  transb, 
-						int m, int n, int k,
-						float alpha,float* a, int  lda,
-						float* b, int  ldb,
-						float beta, float* c,int ldc);
+    /* FLOAT */
+	  void gemm(const char transa, const char  transb, 
+	      const int m, const int n, const int k,
+	      const float alpha, const float* a, const int  lda,
+	      const float* b, const int ldb,
+	      const float beta, float* c, const int ldc);
 
-	float dot(int dim, float *x, int incx, float *y, int incy);
-	void  axpy(int dim, float alpha, float *x, int incx, float *y, int incy);
-	float nrm2(int dim, float *x,int incx);
-	void  scal(int dim, float alpha, float *x, int incx);
-	
-	/* HALF */
-	void gemm(char transa, char  transb, 
-					int M, int N, int K,
-					half alpha,half* A, int  ldA,
-					half* B, int  ldB,
-					half beta, half* C,int ldC);
+	  float dot(const int dim, const float *x, const int incx, 
+	      const float *y, const int incy);
+	  void axpy(const int dim, const float alpha, const float *x, const int incx,
+        float *y, const int incy);
+	  float nrm2(const int dim, const float *x, const int incx);
+	  void scal(const int dim, const float alpha, float *x, const int incx);
+	  
+	  /* HALF */
+	  void gemm(const char transa, const char  transb, 
+					  const int M, const int N, const int K,
+					  const half_float::half alpha, 
+					  const half_float::half* A, const int ldA,
+					  const half_float::half* B, const int ldB,
+					  const half_float::half beta, half_float::half* C, const int ldC);
+	  half_float::half dot(const int dim, 
+	      const half_float::half *x, const int incx, 
+	      const half_float::half *y, const int incy);
+	  void axpy(const int dim, const half_float::half alpha, 
+	      const half_float::half *x, const int incx,
+	      half_float::half *y, const int incy);
+	  half_float::half nrm2(const int dim, 
+	      const half_float::half *x, const int incx);
+	  void scal(const int dim, const half_float::half alpha, 
+	      half_float::half *x, const int incx);
 
-	half dot(int dim, half *x, int incx, half *y, int incy);
-	void  axpy(int dim, half alpha, half *x, int incx, half *y, int incy);
-	half nrm2(int dim, half *x,int incx);
-	void  scal(int dim, half alpha, half *x, int incx);
-
-	private:
-	void gemmAB(int M, int N, int K,
-    					half alpha,half* A, int  ldA,
-				      half* B, int  ldB,
-				      half beta, half* C,int ldC);
-					    
-	void gemmATB(int M, int N, int K,
-				      half alpha,half* A, int  ldA,
-				      half* B, int  ldB,
-				      half beta, half* C,int ldC);
+  private:
+	  void gemmAB(const int M, const int N, const int K,
+      					const half_float::half alpha, const half_float::half* A, const int ldA,
+				        const half_float::half* B, const int ldB,
+				        const half_float::half beta, half_float::half* C, const int ldC);
+					      
+	  void gemmATB(const int M, const int N, const int K,
+				        const half_float::half alpha, const half_float::half* A, const int ldA,
+				        const half_float::half* B, const int ldB,
+				        const half_float::half beta, half_float::half* C, const int ldC);
 };
 }
 //void dot();

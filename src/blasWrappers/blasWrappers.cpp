@@ -1,4 +1,3 @@
-// TODO: ADD const TO INPUT DATA
 #include "blasWrappers.h"
 
 #include <iostream>
@@ -7,25 +6,26 @@
 #include <mkl.h>
 #include <omp.h>
 
-#pragma omp declare reduction(+: half : omp_out += omp_in)
+#pragma omp declare reduction(+: half_float::half : omp_out += omp_in)
 
 mpjd::LinearAlgebra::LinearAlgebra()
 {
-	/* future implementation will use target to select cpu or gpu target machine */	
+	/* TODO:future implementation will use target to select cpu or gpu target machine */	
 }
 
 
-void mpjd::LinearAlgebra::eig(int n, double* a, int  lda,  double *l, 
-    int numEvals, eigenTarget_t target) {
+void mpjd::LinearAlgebra::eig(const int n, double* a, const int  lda,  double *l, 
+    const int numEvals, eigenTarget_t target) {
 
 	//l should contains eigenvalues in descending order
 	LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', n, a, lda, l );
 }
 
-void mpjd::LinearAlgebra::gemm(char transa, char  transb, int m, int n, int k, 
-    double alpha, double* a, int lda,
-    double* b, int  ldb,
-    double beta, double* c, int ldc) {
+void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
+    const  int m, const int n, const int k, 
+    const double alpha, const double* a, const int lda,
+    const double* b, const int ldb,
+    const double beta, double* c, const int ldc) {
     
 	CBLAS_TRANSPOSE ta;										
 	switch (transa) {
@@ -60,24 +60,25 @@ void mpjd::LinearAlgebra::gemm(char transa, char  transb, int m, int n, int k,
 }
 
 
-double mpjd::LinearAlgebra::dot(int dim, double *x, int incx, 
-    double *y, int incy) {
+double mpjd::LinearAlgebra::dot(const int dim, const double *x, const int incx, 
+    const double *y, const int incy) {
     
 	return cblas_ddot(dim, x, incx, y, incy);
 }
 
-void mpjd::LinearAlgebra::axpy(int dim, double alpha, double *x, int incx, 
-    double *y, int incy) {
+void mpjd::LinearAlgebra::axpy(const int dim, const double alpha, 
+    const double *x, int incx, double *y, const int incy) {
     
 		cblas_daxpy(dim, alpha, x, incx, y, incy);
 }
 
-double mpjd::LinearAlgebra::nrm2(int dim, double *x,int incx) {
+double mpjd::LinearAlgebra::nrm2(const int dim, const double *x, const int incx) {
 
 	return cblas_dnrm2(dim, x, incx);
 }
 
-void mpjd::LinearAlgebra::scal(int dim, double alpha, double *x, int incx) {
+void mpjd::LinearAlgebra::scal(const int dim, const double alpha, 
+    double *x, const int incx) {
 
 	cblas_dscal(dim, alpha, x, incx);
 }
@@ -85,10 +86,11 @@ void mpjd::LinearAlgebra::scal(int dim, double alpha, double *x, int incx) {
 
 
 
-void mpjd::LinearAlgebra::gemm(char transa,char  transb, int m, int n, int k, 
-    float alpha, float* a, int lda,
-    float* b,int  ldb,
-    float beta,float* c,int ldc) {
+void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
+    const int m, const int n, const int k, 
+    const float alpha, const float* a, const int lda,
+    const float* b, const int  ldb,
+    const float beta, float* c, int ldc) {
     
 	CBLAS_TRANSPOSE ta;										
 	switch (transa) {
@@ -123,35 +125,37 @@ void mpjd::LinearAlgebra::gemm(char transa,char  transb, int m, int n, int k,
 }
 
 
-float mpjd::LinearAlgebra::dot(int dim, float *x, int incx, float *y, int incy) {
+float mpjd::LinearAlgebra::dot(const int dim, const float *x, const int incx,
+    const float *y, const int incy) {
 
 	return cblas_sdot(dim, x, incx, y, incy);
 }
 
 
-void mpjd::LinearAlgebra::axpy(int dim, float alpha, float *x, int incx, 
-    float *y, int incy) {
+void mpjd::LinearAlgebra::axpy(const int dim, const float alpha, 
+    const float *x, const int incx, float *y, const int incy) {
     
   cblas_saxpy(dim,alpha,x,incx,y,incy);
 }
 
-float mpjd::LinearAlgebra::nrm2(int dim, float *x, int incx) {
+float mpjd::LinearAlgebra::nrm2(const int dim, const float *x, const int incx) {
 
 	return cblas_snrm2(dim, x, incx);
 }
 
-void mpjd::LinearAlgebra::scal(int dim, float alpha, float *x, int incx) {
+void mpjd::LinearAlgebra::scal(const int dim, const float alpha, 
+    float *x, const int incx) {
 
 	cblas_sscal(dim, alpha, x, incx);
 }
 
 
 /* HALF */
-void mpjd::LinearAlgebra::gemm(char transa, char  transb, 
-    int M, int N, int K,
-    half alpha,half* A, int  ldA,
-    half* B, int  ldB,
-    half beta, half* C,int ldC) {
+void mpjd::LinearAlgebra::gemm(const char transa, const char  transb, 
+    const int M, const int N, const int K,
+    const half_float::half alpha, const half_float::half* A, const int ldA,
+    const half_float::half* B, const int  ldB,
+    const half_float::half beta, half_float::half* C, int ldC) {
   
   if (transb == 'T') {
       std::cout << "ERROR GEMM" << std::endl;
@@ -172,10 +176,10 @@ void mpjd::LinearAlgebra::gemm(char transa, char  transb,
 }
 
 
-void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
-    half alpha,half* A, int  ldA,
-    half* B, int  ldB,
-    half beta, half* C,int ldC){
+void mpjd::LinearAlgebra::gemmAB(const int M, const int N, const int K,
+    const half_float::half alpha, const half_float::half* A, const int ldA,
+    const half_float::half* B, const int ldB,
+    const half_float::half beta, half_float::half* C,int ldC) {
 
   if(M==1 && N ==1){
     C[0] = dot(K, A,1, B, 1);
@@ -188,16 +192,16 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
 
   #pragma omp parallel if(blockM>1 || blockN>1)
   {
-    half miniC[blockM*blockN];
-    half miniA[blockM*blockK];
-    half miniB[blockK*blockN];
+    half_float::half miniC[blockM*blockN];
+    half_float::half miniA[blockM*blockK];
+    half_float::half miniB[blockK*blockN];
     
     #pragma omp for collapse(2) //if(blockM>1 && blockN>1)
     for (int i = 0; i < M; i += blockM) {
       for (int j = 0; j < N; j += blockN) {
       
           /* initialize miniC */
-          memset(miniC, 0, sizeof(half)*blockM*blockN);
+          memset(miniC, 0, sizeof(half_float::half)*blockM*blockN);
           
           
           for (int k = 0; k < K; k += blockK) {
@@ -220,13 +224,13 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
             #pragma omp simd
             for (int jj = 0; jj < jjEnd; jj++) {
                 memcpy(&miniB[0 + jj*blockM], &B[k+(j+jj)*ldB],
-                    sB*sizeof(half));
+                    sB*sizeof(half_float::half));
             }
             
             #pragma omp parallel for collapse(2) if(blockM>1 || blockN>1)
             for (int ii = 0; ii < blockM; ii++) {
               for (int jj = 0; jj < blockN; jj++) {
-                half cc = static_cast<half>(0.0);
+                half_float::half cc = static_cast<half_float::half>(0.0);
                 #pragma omp simd reduction (+:cc)
                 for (int kk = 0; kk < blockK; kk++) {
                        cc += alpha*miniA[ii*blockK+kk]*miniB[kk+jj*blockK];
@@ -254,10 +258,10 @@ void mpjd::LinearAlgebra::gemmAB(int M, int N, int K,
   } //  #pragma omp parallel if(blockM>1 || blockN>1)        
 }
 						
-void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
-    half alpha, half* A, int  ldA,
-    half* B, int  ldB,
-    half beta, half* C, int ldC){
+void mpjd::LinearAlgebra::gemmATB(const int M, const int N, const int K,
+    const half_float::half alpha, const half_float::half* A, const int ldA,
+    const half_float::half* B, const int ldB,
+    const half_float::half beta, half_float::half* C, int ldC) {
 
   /* 
     Both A and B are accessed by column major 
@@ -267,7 +271,7 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
   #pragma omp parallel for collapse(2) if(M>1 || N>1)
   for (int jj = 0; jj < N; jj++) {
      for (int ii = 0; ii < M; ii++) {
-          half cc = static_cast<half>(0.0);// C[ii+jj*ldC];
+          half_float::half cc = static_cast<half_float::half>(0.0);// C[ii+jj*ldC];
           
           //#pragma omp simd reduction(+:cc)
           #pragma omp simd reduction(+:cc)
@@ -279,9 +283,11 @@ void mpjd::LinearAlgebra::gemmATB(int M, int N, int K,
   }
 }
 
-half mpjd::LinearAlgebra::dot(int dim, half *x, int incx, half *y, int incy){
+half_float::half mpjd::LinearAlgebra::dot(const int dim, 
+    const half_float::half *x, const int incx,
+    const half_float::half *y, const int incy) {
 
-  half res=static_cast<half>(0.0);
+  half_float::half res=static_cast<half_float::half>(0.0);
   #pragma omp simd reduction(+:res)
   for (int i = 0; i < dim; i++) {
     res += x[i]*y[i];
@@ -290,24 +296,26 @@ half mpjd::LinearAlgebra::dot(int dim, half *x, int incx, half *y, int incy){
   return res;
 }
 
-void mpjd::LinearAlgebra::axpy(int dim, half alpha, half *x, int incx,
-    half *y, int incy){
+void mpjd::LinearAlgebra::axpy(const int dim, const half_float::half alpha, 
+    const half_float::half *x, const int incx, 
+    half_float::half *y, const int incy) {
     
   //y = y + alpha * x
   #pragma omp simd
   for(int i=0;i<dim;i++){
       y[i] += alpha*x[i];
   }
-
 }
 
-half mpjd::LinearAlgebra::nrm2(int dim, half *x, int incx){ 
+half_float::half mpjd::LinearAlgebra::nrm2(const int dim, 
+    const half_float::half *x, const int incx) { 
 
-  half res = dot(dim, x, incx, x, incx);
+  half_float::half res = dot(dim, x, incx, x, incx);
   return half_float::sqrt(res);
 }
 
-void mpjd::LinearAlgebra::scal(int dim, half alpha, half *x, int incx){
+void mpjd::LinearAlgebra::scal(const int dim, const half_float::half alpha, 
+    half_float::half *x, const int incx) {
 
   //#pragma omp parallel for
   for (int i = 0; i < dim; i++) {
