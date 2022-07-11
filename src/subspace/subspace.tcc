@@ -1,119 +1,110 @@
+//TODO: Format file
+
 #include <iostream>
+
 #include <random>
 #include <algorithm>
 #include <vector>
 #include <iterator>
+
 #include "../blasWrappers/blasWrappers.h"
 
-//#include "../include/helper.h"
-
-#if 0
-template<class fp> 
-void printMat(std::vector<fp> A,int ldA, int rows,int cols,std::string name){
-	fp *A_ = A.data();
-//	std::cout <<"%"<< name << std::endl;
-	
-//	std::cout << name << "[]" << std::endl;
-	for(auto i=0;i<rows;i++){	
-		for(auto j=0;j<cols; j++){
-			std::cout << name << "("<< i+1 << "," << j+1 << ")=" << A_[i+j*ldA] << ";" << std::endl;
-		}
-	}
-}
-#endif
-
-
 template<class fp>
-void init_vec_zeros(std::vector<fp> &v, int nVals){
+void init_vec_zeros(std::vector<fp> &v, const int nVals){
 
 	for (auto j=0;j<nVals; j++){
 		v.push_back(static_cast<fp>(0));
 	}
-
 } 
 
-
-
 template<class fp>
-mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, int dim_,int numEvals_, eigenTarget_t eigTarget_, int maxBasis_, LinearAlgebra &la_,
-				 std::vector<fp> &w_, int &ldw_,	
-				 std::vector<fp> &Q_, int &ldQ_, std::vector<fp> &L_, 
-				 std::vector<fp> &R_, int &ldR_, 
-				 std::vector<fp> &Qlocked_, int &ldQlocked_,std::vector<fp> &Llocked_,
-				 std::vector<fp> &Rlocked_, int &ldRlocked_)
+mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_, 
+    const int numEvals_, const  eigenTarget_t eigTarget_, const int maxBasis_, 
+    LinearAlgebra &la_,
+    std::vector<fp> &w_, int &ldw_,	
+    std::vector<fp> &Q_, int &ldQ_, 
+    std::vector<fp> &L_, 
+    std::vector<fp> &R_, int &ldR_, 
+    std::vector<fp> &Qlocked_, int &ldQlocked_, 
+    std::vector<fp> &Llocked_,
+    std::vector<fp> &Rlocked_, int &ldRlocked_)
+    : la(la_),
+	    mat(mat_),
+	    dim(dim_),
+	    numEvals(numEvals_),
+	    eigTarget(eigTarget_),
+	    maxBasis(maxBasis_),
+	    blockSize(numEvals_),
+	    basisSize(0),
+	    lockedNumEvals(0),
+	    w(w_), ldw(ldw_),
+	    Q(Q_), ldQ(ldQ_),
+	    L(L_),
+	    R(R_), ldR(ldR_),
+	    Qlocked(Qlocked_), ldQlocked(ldQlocked_),
+	    Llocked(Llocked_),
+	    Rlocked(Rlocked_), ldRlocked(ldRlocked_) {
 
-:
-	la(la_),
-	mat(mat_),
-	dim(dim_),
-	numEvals(numEvals_),
-	eigTarget(eigTarget_),
-	maxBasis(maxBasis_),
-	blockSize(numEvals_),
-	basisSize(0),
-	lockedNumEvals(0),
-	w(w_),
-	ldw(ldw_),
-	Q(Q_),ldQ(ldQ_),
-	L(L_),
-	R(R_),ldR(ldR_),
-	Qlocked(Qlocked_),ldQlocked(ldQlocked_),
-	Llocked(Llocked_),
-	Rlocked(Rlocked_),ldRlocked(ldRlocked_)
-{
+  // subspace basis
+	V.reserve(dim*maxBasis*numEvals); ldV = dim; 
 
-	V.reserve(dim*maxBasis*numEvals); ldV = dim; // subspace basis
-	
-	T.reserve(maxBasis*numEvals*maxBasis*numEvals); ldT = maxBasis*numEvals;// projected matrix
+  // projected matrix
+	T.reserve(maxBasis*numEvals*maxBasis*numEvals); ldT = maxBasis*numEvals;
 	init_vec_zeros(T,maxBasis*numEvals*maxBasis*numEvals);
 	
-	q.reserve(maxBasis*numEvals*numEvals); ldq = maxBasis*numEvals; // eigenvectors of T
+	// eigenvectors of T
+	q.reserve(maxBasis*numEvals*numEvals); ldq = maxBasis*numEvals; 
 	init_vec_zeros(q,maxBasis*numEvals*numEvals);
-	
-	qq.reserve(maxBasis*numEvals*maxBasis*numEvals); ldqq = maxBasis*numEvals; // buffer for syev
+		
+	// buffer for syev
+	qq.reserve(maxBasis*numEvals*maxBasis*numEvals); ldqq = maxBasis*numEvals; 
 	init_vec_zeros(qq,maxBasis*numEvals*maxBasis*numEvals);
 
-	LL.reserve(maxBasis*numEvals); // buffer for syev
+  // buffer for syev
+	LL.reserve(maxBasis*numEvals); 
 	init_vec_zeros(LL,maxBasis*numEvals);
 
-	
-	Q.reserve(dim*numEvals); ldQ = dim; // locked eigenvectors
+  // locked eigenvectors
+	Q.reserve(dim*numEvals); ldQ = dim; 
 	init_vec_zeros(Q,dim*numEvals);
 
-  Qprev.reserve(dim*numEvals); ldQprev = dim; // locked eigenvectors
+  // locked eigenvectors
+  Qprev.reserve(dim*numEvals); ldQprev = dim; 
 	init_vec_zeros(Qprev,dim*numEvals);
 
-
-	L.reserve(numEvals); 				        // locked eigenvalues
+  // locked eigenvalues
+	L.reserve(numEvals); 				        
 	init_vec_zeros(L,numEvals);
 
-
-	R.reserve(dim*numEvals); ldR = dim; // eigen residual 
+  // eigen residual 
+  R.reserve(dim*numEvals); ldR = dim; 
 	init_vec_zeros(R,dim*numEvals);
 
-	Qlocked.reserve(dim*numEvals); ldQlocked = dim; // locked eigenvectors
+	// locked eigenvectors
+	Qlocked.reserve(dim*numEvals); ldQlocked = dim; 
 	Qlocked.clear();
 
-  QTw.reserve(numEvals*numEvals); ldQTw = numEvals ; // locked eigenvectors
+  // locked eigenvectors
+  QTw.reserve(numEvals*numEvals); ldQTw = numEvals ; 
 	init_vec_zeros(QTw,numEvals*numEvals);
 
-  
-	Llocked.reserve(numEvals); 								      // locked eigenvalues
+  // locked eigenvalues
+	Llocked.reserve(numEvals); 								      
 	Llocked.clear();
 
-	Rlocked.reserve(dim*numEvals); ldRlocked = dim; // locked eigen residual 
+  // locked eigen residual 
+	Rlocked.reserve(dim*numEvals); ldRlocked = dim; 
 	Rlocked.clear();
 	
-	Aw.reserve(dim*blockSize); ldAw = dim;  // tmp vector to used in Av
+	// tmp vector to used in Av
+	Aw.reserve(dim*blockSize); ldAw = dim;  
 	init_vec_zeros<fp>(Aw,dim*blockSize);
 
 	AV.reserve(dim*blockSize*maxBasis); ldAV = dim;
 
-	w.reserve(dim*blockSize);  ldw  = dim;  // new subspace direction
-	
+  // new subspace direction
+	w.reserve(dim*blockSize);  ldw  = dim;  
 }
-
-
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_init_direction(){
@@ -121,7 +112,6 @@ void mpjd::Subspace<fp>::Subspace_init_direction(){
 	/*
 		Initialize basis w with random vals
 	*/
-
 	std::random_device rand_dev;
 	std::mt19937 			 generator(rand_dev());
 	std::uniform_int_distribution<int> distr(-100,100);
@@ -129,7 +119,6 @@ void mpjd::Subspace<fp>::Subspace_init_direction(){
 	for(auto i=0;i<dim*numEvals;i++){
 		w.push_back(static_cast<fp>(distr(generator))/static_cast<fp>(100));
 	}
-
 }
 
 
@@ -141,45 +130,34 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 
 	int rows = dim;
 	int cols = basisSize*blockSize;
-
   
-  #if 0
-  /* w = orth(Qlocked,w) */
-  VV = static_cast<fp*>(Qlocked.data());
-  if(lockedNumEvals > 0){
-	  for(int j=0; j < blockSize; j++){
-		  for(int i=0; i < lockedNumEvals ; i++){
-				  fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'w
-				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldV],1);     	// w = w - V(i)*alpha
-		  }	
-	  }
-	}
-  #endif
-
   VV = static_cast<fp*>(V.data());
   /* w = orth(V,w) */
 	for(int j=0; j < blockSize; j++){
 		for(int i=0; i < cols ; i++){
-				fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
-				la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldV],1);     	// v = v - V(i)*alpha
+		    // alpha = V(i)'v
+				fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};
+				// v = v - V(i)*alpha
+				la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldV],1); 
 		}	
 	}
 
   /* w = orth(w) */
-  for(auto k=0;k<3;k++)
+  for(auto k=0;k<3;k++){
 	  for(int j=0; j < blockSize; j++){
 		  for(int i=0; i < j ; i++){
-				  auto alpha {-la.dot(rows,&vv[0+i*ldV],1,&vv[0+j*ldV],1)};// alpha = V(i)'v
-				  la.axpy(rows,alpha,&vv[0+i*ldV],1,&vv[0+j*ldV],1);     	// v = v - V(i)*alpha
+		      // alpha = V(i)'v
+				  auto alpha {-la.dot(rows,&vv[0+i*ldV],1,&vv[0+j*ldV],1)};
+				  // v = v - V(i)*alpha
+				  la.axpy(rows,alpha,&vv[0+i*ldV],1,&vv[0+j*ldV],1);     	
 		  }	
+		  // v = v/norm(v)
 		  auto alpha {la.nrm2(rows,&vv[0+j*ldV],1)}	;
-		  la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    // v = v/norm(v)
+		  la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    
 	  }
-	
+	}  
 	updateOrthogonalizations(1);
-
 }
-
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_orth_basis(){
@@ -190,18 +168,20 @@ void mpjd::Subspace<fp>::Subspace_orth_basis(){
 	int cols = basisSize*numEvals;
 
   /* V = orth(V) */
-  for(auto k=0; k<3; k++)
+  for(int k=0; k<3; k++){
 	  for(int j=0; j < cols; j++){
 		  for(int i=0; i < j ; i++){
-				  auto alpha {-la.dot(rows,&VV[0+i*ldV],1,&VV[0+j*ldV],1)};// alpha = V(i)'v
-				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&VV[0+j*ldV],1);     	// v = v - V(i)*alpha
+		      // alpha = V(i)'v
+				  auto alpha {-la.dot(rows,&VV[0+i*ldV],1,&VV[0+j*ldV],1)};
+				  // v = v - V(i)*alpha
+				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&VV[0+j*ldV],1); 
 		  }	
+		  // v = v/norm(v)
 		  auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
-		  la.scal(dim,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    // v = v/norm(v)
+		  la.scal(dim,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    
 	  }
-	
+	}
 	updateOrthogonalizations(1);
-
 }
 
 
@@ -222,62 +202,50 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 	fp *V_  =  V.data();
 		
 
-	/**
-		T = [	T 0; 0 w'Aw]
-	**/
-	
+	//	T = [	T 0; 0 w'Aw]
 	la.gemm('T','N', blockSize, blockSize, dim, one, w_, ldw,
-						Aw_, ldAw, zero, &T_[basisSize*blockSize + basisSize*blockSize*ldT],ldT);	
+	    Aw_, ldAw, zero, &T_[basisSize*blockSize + basisSize*blockSize*ldT],ldT);	
 						
 	/* only the diagonal part is of interest */					
 	if(basisSize < 1) return;
 
-	/**
-		T = [	T V'Aw; 0 w'Aw]
-	**/
-	
+	//	T = [	T V'Aw; 0 w'Aw]
 	la.gemm('T','N', basisSize*blockSize, blockSize, dim, one, V_, ldV,
-						Aw_, ldAw, zero, &T_[0 + basisSize*blockSize*ldT],ldT);	
+	    Aw_, ldAw, zero, &T_[0 + basisSize*blockSize*ldT],ldT);	
 	
-	/**
-		T = [	T V'Aw; w'AV w'Aw]
-	**/
+	//	T = [	T V'Aw; w'AV w'Aw]
 	la.gemm('T','N', blockSize, basisSize*blockSize, dim, one, Aw_, ldAw,
-						V_, ldV, zero, &T_[basisSize*blockSize + 0*ldT],ldT);	
-
-//	printMat(T,ldT,10,10,"T2"+std::to_string(k));
-	
+	    V_, ldV, zero, &T_[basisSize*blockSize + 0*ldT],ldT);	
 }	
 
 template<class fp> 
 void mpjd::Subspace<fp>::Subspace_update_basis(){
+
 	// V = [V w]
 	V.insert(V.end(), w.begin() , w.end());
 	basisSize = basisSize + 1;
-	
 }
-
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
-	
 
 	qq = T; // copy data values from T to qq 
 					// eig replaces QQ with eigenvectors of T
+	la.eig((basisSize)*blockSize, qq.data() , ldqq, LL.data(), 
+	    numEvals, eigTarget);
 
-	la.eig((basisSize)*blockSize, qq.data() , ldqq, LL.data(), numEvals, eigTarget);
-
-	// eig returns ALL eigenpairs of T
-	// extract the wanted ones
-	// LL contains eigenvalues in descending order
-
+	/* 
+	  eig returns ALL eigenpairs of T
+    extract the wanted ones
+    LL contains eigenvalues in descending order
+  */	   
 	L.clear(); // Clear previous
 	q.clear(); // 
 
 	auto LLstart_ = LL.begin();
 	auto LLend_   = LL.begin();
-	auto qqstart_  = qq.begin();
-	auto qqend_    = qq.begin();
+	auto qqstart_ = qq.begin();
+	auto qqend_   = qq.begin();
 
 	switch(eigTarget){
 		case eigenTarget_t::SM:
@@ -306,19 +274,15 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	fp one  = static_cast<fp>(1.0);
 	fp zero = static_cast<fp>(0.0);
 	
-	
-	
 	Qprev = Q;
 
 	la.gemm('N', 'N',dim, blockSize, basisSize*blockSize,
-					one, V.data() , ldV, q.data() , ldq, zero, Q.data() , ldQ);
-	
+	    one, V.data() , ldV, q.data() , ldq, zero, Q.data() , ldQ);
 }
-
-
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_eig_residual(){
+
 	// R = AV*q-Q*L
 	fp *AV_ = AV.data();
 	fp *q_  =  q.data();
@@ -330,7 +294,6 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	fp zero       = static_cast<fp>(0.0);
 	fp minus_one  = static_cast<fp>(-1.0);
 	
-	// R = Q
 	R = Q;
 	
 	// R = R*L = Q*L 
@@ -340,68 +303,61 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	
 	// R = AV*q-R = AV*q-Q*L
 	la.gemm('N', 'N',dim, numEvals, basisSize*blockSize,
-						one, AV_, ldAV, q_, ldq, minus_one, R_, ldR);
-
-
-
+	    one, AV_, ldAV, q_, ldq, minus_one, R_, ldR);
 }
 
 template<class fp>
-bool mpjd::Subspace<fp>::Check_Convergence(fp tol){
+bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
 
 	fp *R_ = R.data();
 	fp  rho{};
   conv_num.clear();
+  
 	for(auto j=0;j<numEvals;j++){
 		rho = la.nrm2(dim,&R_[0+j*ldR],1);
-
 		if(rho < tol*mat.Norm()){
 			conv_num.push_back(j);
 		}
-		
 	}
 
-#if 1	
+#if 1	// TODO: Locking procedure - the #else code block
 	if(conv_num.size() == numEvals){
-	
-	    Rlocked = R;
-	    Llocked = L;
-	    Qlocked = Q;
-	    
-	    lockedNumEvals = numEvals; 
-			numEvals       = 0;	
-			blockSize      = 0;
-	    return true;
+      Rlocked = R;
+      Llocked = L;
+      Qlocked = Q;
+      
+      lockedNumEvals = numEvals; 
+	    numEvals       = 0;	
+	    blockSize      = 0;
+      return true;
 	}else{
-	    return false;
+      return false;
 	}
-#endif
-	
+#else
 	bool restart = false;
 	while(conv_num.size() > 0){
-	    restart = true;
-			/* pop last element of conv as j*/
-			int j = conv_num.back();
-			conv_num.pop_back();		
-			
-			/** 
-				 insert j-th eigenpair
-			*/
-			Rlocked.insert(Rlocked.end(), R.begin() + (0+j*ldR), R.begin() + (0 + (j+1)*ldR));
-			Qlocked.insert(Qlocked.end(), Q.begin() + (0+j*ldQ), Q.begin() + (0 + (j+1)*ldQ));
-			Llocked.push_back(L.at(j));
+      restart = true;
+	    /* pop last element of conv as j*/
+	    int j = conv_num.back();
+	    conv_num.pop_back();		
+	    
+	     
+		  // insert j-th eigenpair
+	    Rlocked.insert(Rlocked.end(), R.begin() + (0+j*ldR),
+	        R.begin() + (0 + (j+1)*ldR));
+	    Qlocked.insert(Qlocked.end(), Q.begin() + (0+j*ldQ), 
+	        Q.begin() + (0 + (j+1)*ldQ));
+	    Llocked.push_back(L.at(j));
 
-			/**
-				  remove j-th eigenpair
-			*/
-			R.erase(R.begin()+ (0+j*ldQ),R.begin() +(0 + (j+1)*ldQ-1));
-			Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + (j+1)*ldQ-1));
-			L.erase(L.begin() + j);
-			
-			/* update variable conserning problem dimesionalities*/
-			lockedNumEvals++; 
-			numEvals--;	
-			blockSize--;
+	    // remove j-th eigenpair
+	    R.erase(R.begin()+ (0+j*ldQ),R.begin() +(0 + (j+1)*ldQ-1));
+	    Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + (j+1)*ldQ-1));
+	    L.erase(L.begin() + j);
+	    
+	    /* update variable conserning problem dimesionalities*/
+	    lockedNumEvals++; 
+	    numEvals--;	
+	    blockSize--;
 	}	
 	
 	if(restart){
@@ -413,6 +369,7 @@ bool mpjd::Subspace<fp>::Check_Convergence(fp tol){
 	}else{
 		return false;
 	}	
+#endif
 };
 
 
@@ -423,16 +380,15 @@ void mpjd::Subspace<fp>::Subspace_Check_size_and_restart(){
   if(basisSize == maxBasis-1){
     Subspace_restart();
   }
-  
-
 }
 
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_restart(){
-  //std::cout << "Restarting" << std::endl;
-  /* restart basis as:
-     V = orth([Qprev Q R])
+
+  /* 
+    restart basis as:
+    V = orth([Qprev Q R])
   */
   
   /* V = orth([Qprev Q R]) */
@@ -459,9 +415,7 @@ void mpjd::Subspace<fp>::Subspace_restart(){
   la.gemm('T', 'N', basisSize*numEvals, basisSize*numEvals, dim,
 						one, V.data(), ldV, AV.data(), ldAV, zero, T.data(), ldT);
 						
-						
   updateRestarts(1);
-		
 }
 
 template<class fp>
