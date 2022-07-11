@@ -1,38 +1,34 @@
 template<class fp>
 mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int &ldQ_,
-	      std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
-	      std::vector<fp> &Qlocked_, int &ldQlocked_)
-	      : mat(mat_),
-	        Q(Q_), ldQ(ldQ_),
-	        L(L_),
-	        R(R_), ldR(ldR_),
-          Qlocked(Qlocked_), ldQlocked(ldQlocked)       
-{
-}
+    std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
+    std::vector<fp> &Qlocked_, int &ldQlocked_)
+    : mat(mat_),
+      Q(Q_), ldQ(ldQ_),
+      L(L_),
+      R(R_), ldR(ldR_),
+      Qlocked(Qlocked_), ldQlocked(ldQlocked){}
 	
-
 template<class fp>
 std::vector<fp> mpjd::SQMR<fp>::solve(int &iters){
+
   iters = 0;
   return R;
 }
 
-
-
 template<class fp,class sfp>
 mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int &ldQ_,
-      std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
-      std::vector<fp> &Qlocked_, int &ldQlocked_, LinearAlgebra &la_) 
-      : SQMR<fp>(mat_,Q_,ldQ_,L_,R_,ldR_,Qlocked_,ldQlocked_)
-      ,mat(new ScaledMatrix<fp,sfp>(mat_))
-      ,la(la_)
-
-{
+    std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
+    std::vector<fp> &Qlocked_, int &ldQlocked_, LinearAlgebra &la_) 
+    : SQMR<fp>(mat_,Q_,ldQ_,L_,R_,ldR_,Qlocked_,ldQlocked_),
+      mat(new ScaledMatrix<fp,sfp>(mat_)),
+      la(la_){
     
-    sQ.reserve(this->Q.capacity()); ldsQ = this->ldQ; // Ritz vectors
+    // Ritz vectors
+    sQ.reserve(this->Q.capacity()); ldsQ = this->ldQ; 
     sQ.insert(sQ.begin(),sQ.capacity(),static_cast<sfp>(0.0));
     
-    sQlocked.reserve(this->Qlocked.capacity()); ldsQlocked = ldQlocked_; // Locked Ritz vectors
+    // Locked Ritz vectors
+    sQlocked.reserve(this->Qlocked.capacity()); ldsQlocked = ldQlocked_; 
     sQlocked.insert(sQlocked.begin(),sQlocked.capacity(),static_cast<sfp>(0.0));
     
 	  sR.reserve(mat->Dim()); ldsR = this->ldR;
@@ -76,13 +72,11 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
   // cast to solver precision 
   sQ.clear(); sQ.resize(this->Q.size()); ldsQ = this->ldQ;
   std::transform(this->Q.begin(),this->Q.end(),sQ.begin(),to_sfp);
-  sQlocked.clear(); sQlocked.resize(this->Qlocked.size());  //ldsQlocked = this->ldQlocked;
-  std::transform(this->Qlocked.begin(),this->Qlocked.end(),sQlocked.begin(),to_sfp);
   
-  
-//  std::transform(this->L.begin(),this->L.end(),sL.begin(),to_sfp);
-//  sL.resize(this->L.size());
-
+  //ldsQlocked = this->ldQlocked;
+  sQlocked.clear(); sQlocked.resize(this->Qlocked.size());  
+  std::transform(this->Qlocked.begin(),this->Qlocked.end(),
+      sQlocked.begin(),to_sfp);
 
   /* clear previous solution */
   XX.clear();
@@ -91,55 +85,53 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
   int ldiDR = this->ldR;
   /* Call the actual solver */
   for(auto i=0; i < this->L.size(); i++){
+  
     /* Change Matrix shift*/
     mat->update_matrix_shift(*(this->L.data()+i));
    
     /* Casting input vectors into the inner loop precision */ 
     /* cast to solver precision ONLY the vectors to be used*/  
-    
     mat->applyScalInvMat(iDR.data()+ldiDR*i,ldiDR,mat->Dim(),1); // DR = D\R
-    
     
     auto rb   = iDR.begin();
     auto ldrb = ldiDR;
+
     // scale to right hand side vector
-    auto nrmR = la.nrm2(mat->Dim(), iDR.data()+(0+i*ldrb),1); nrmR = static_cast<sfp>(1)/nrmR;
+    auto nrmR = la.nrm2(mat->Dim(), iDR.data()+(0+i*ldrb),1);
+    nrmR = static_cast<sfp>(1)/nrmR;
     la.scal(mat->Dim(), nrmR, iDR.data()+(0+i*ldrb), 1);
 
     // cast to solver precision 
     sR.clear(); sR.resize(mat->Dim());
     std::transform(rb + (0+i*ldrb),rb + (0+(i+1)*ldrb), sR.begin(),to_sfp);
 
-    // at this point right hand side vectors are up to date with the diagonal sca
-    //
+    // at this point right hand side vectors are 
+    // up to date with the diagonal scal
     int innerIters = solve_eq();
     iters += innerIters;
+
     /* Casting output vectors into the outer loop precision */  
     XX.resize(XX.size()+mat->Dim());
     std::transform(x.begin(),x.end(), XX.end()-mat->Dim(),to_fp);
-    
-    
   }
-  mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L.size()); // DR = D\R
-  
+  // DR = D\R
+  mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L.size()); 
   return XX;
 }
 
 template<class fp, class sfp>
 int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
 
-    
     auto dim = mat->Dim();
     auto numEvals = this->L.size();
     
     int numLocked = sQlocked.size()/dim;
-    //x= sR; return;
+
     // this should be input in this function
     sfp ita    = static_cast<sfp>(0.0);
     sfp thita_ = static_cast<sfp>(0.0);
     int qmrMaxIt  = 1000;//dim;//1000;
     double tol    = 1e-03;
-
 
     sfp Thita_  = static_cast<sfp>(0.0);
     sfp rho_    = static_cast<sfp>(0.0);
@@ -180,26 +172,26 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     sfp zero       = static_cast<sfp>( 0.0);
 
     
-    //double *x = X;
-    //double *b = B;
-    
     std::vector<sfp>& b = sR;
     std::vector<sfp>& t = x; 
     
     t.clear();     t.insert(t.begin(),t.capacity(),static_cast<sfp>(0.0));
-    delta.clear(); delta.insert(delta.begin(), delta.capacity(),static_cast<sfp>(0.0));
-    r.clear();     r.insert(r.begin(), r.capacity(),static_cast<sfp>(0.0));
-    d.clear();     d.insert(d.begin(),d.capacity(),static_cast<sfp>(0.0));
-    w.clear();     w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
-    QTd.clear();   QTd.insert(QTd.begin(),QTd.capacity(),static_cast<sfp>(0.0));
+    
+    delta.clear(); 
+    delta.insert(delta.begin(), delta.capacity(),static_cast<sfp>(0.0));
+    
+    r.clear();   r.insert(r.begin(), r.capacity(),static_cast<sfp>(0.0));
+    d.clear();   d.insert(d.begin(),d.capacity(),static_cast<sfp>(0.0));
+    w.clear();   w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
+    QTd.clear(); QTd.insert(QTd.begin(),QTd.capacity(),static_cast<sfp>(0.0));
     int ldQTd = QTd.capacity(); 
     
     /* r = -b */
     r = b;
     la.scal(dim,minus_one,r.data(),1);
     
-    /* d = r*/
     d = r;
+
     /* g = norm(r)*/
     g = la.nrm2(dim,b.data(),1);
 
@@ -211,30 +203,25 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
         
         /* d = d - QQTd */
         la.gemm('T','N',numEvals,1,dim,one,
-                                sQ.data(),ldsQ,d.data(),dim,
-                                zero,QTd.data(),ldQTd);
-
+            sQ.data(),ldsQ,d.data(),dim,
+            zero,QTd.data(),ldQTd);
 
         la.gemm('N','N',dim,1,numEvals,minus_one,
-                                      sQ.data(),ldsQ,QTd.data(),ldQTd,
-                                      one,d.data(),dim);         
+            sQ.data(),ldsQ,QTd.data(),ldQTd,
+            one,d.data(),dim);         
 
         /* w = A*d*/                              
         mat->matVec(d,dim,w,dim,1);                                                     
-
-        
         
         /* w = w-VVTw */
         la.gemm('T','N',numEvals,1,dim,one,
-                                sQ.data(), ldsQ,w.data(),dim,
-                                zero,QTd.data(),numEvals);
+            sQ.data(), ldsQ,w.data(),dim,
+            zero,QTd.data(),numEvals);
 
         la.gemm('N','N',dim,1,numEvals,minus_one,
-                                sQ.data(),ldsQ,QTd.data(),numEvals,
-                                one,w.data(),dim);
+            sQ.data(),ldsQ,QTd.data(),numEvals,
+            one,w.data(),dim);
 
-
-      
         /* sigma = d'*w */
         sigma = la.dot(dim,d.data(),1,w.data(),1);
 
@@ -251,7 +238,7 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
         
         /* c = 1./sqrt(1+Thita*Thita) */
         c = std::sqrt(one/(one+Thita*Thita));
-        /* g = g*Thita*c */
+        
         g =g*Thita*c;
 
         if(iter == 0){
@@ -268,7 +255,7 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
         la.axpy(dim,one,delta.data(),1,t.data(),1);
 
         if(abs(g) < tol){
-           //break; // it stops too early
+           //break; // TODO: it stops too early
         }
 
         gama = c*c*Thita_; 
@@ -293,11 +280,9 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
          r00 = rkm;
         }
 
-
         if(rho_ < tol){
-        //   break; // it stops too early
+        //   break; // TODO: it stops too early
         }
-
 
         rkm = sqrt(g*g/f);
         
@@ -328,7 +313,6 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     }
     
     return iter;
-    //t = b;    return ; // for testing purpose
 }
 
 
