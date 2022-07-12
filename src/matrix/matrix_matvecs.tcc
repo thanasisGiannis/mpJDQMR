@@ -3,8 +3,8 @@
 */
 
 template <class fp>
-void mpjd::Matrix<fp>::matVec(std::vector<fp> &x, int ldx, 
-    std::vector<fp> &y, int ldy, int dimBlock) {
+void mpjd::Matrix<fp>::matVec(const std::vector<fp> &x, const int ldx, 
+    std::vector<fp> &y, const int ldy, const int dimBlock) {
   
   updateMatVecs(dimBlock);
 	switch( m_DS ) {
@@ -19,8 +19,8 @@ void mpjd::Matrix<fp>::matVec(std::vector<fp> &x, int ldx,
 
 // COO implementation of y = Ax
 template <class fp>
-void mpjd::Matrix<fp>::matVec_COO(std::vector<fp> &x, int ldx, 
-    std::vector<fp> &y, int ldy, int dimBlock) {
+void mpjd::Matrix<fp>::matVec_COO(const std::vector<fp> &x, const int ldx, 
+    std::vector<fp> &y, const int ldy, const int dimBlock) {
 	
 	auto xx = x.data();
 	auto yy = tmp.data();

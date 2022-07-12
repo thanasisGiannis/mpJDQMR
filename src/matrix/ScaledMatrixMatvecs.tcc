@@ -3,8 +3,9 @@
 */
 
 template <class fp, class sfp>
-void mpjd::ScaledMatrix<fp, sfp>::matVec(std::vector<sfp> &x, int ldx, 
-    std::vector<sfp> &y, int ldy, int dimBlock) {
+void mpjd::ScaledMatrix<fp, sfp>::matVec(
+  const std::vector<sfp> &x, const int ldx, 
+  std::vector<sfp> &y, const int ldy, const int dimBlock) {
 
   mpjd::matrixStatistics::updateMatVecs(dimBlock);
 
@@ -20,8 +21,9 @@ void mpjd::ScaledMatrix<fp, sfp>::matVec(std::vector<sfp> &x, int ldx,
 
 // COO implementation of y = Ax
 template <class fp, class sfp>
-void mpjd::ScaledMatrix<fp, sfp>::matVec_COO(std::vector<sfp> &x, int ldx,
-    std::vector<sfp> &y, int ldy, int dimBlock) {
+void mpjd::ScaledMatrix<fp, sfp>::matVec_COO(
+  const std::vector<sfp> &x, const int ldx,
+  std::vector<sfp> &y, int ldy, int dimBlock) {
 	
   auto xx = x.data();
   auto yy = tmp.data();

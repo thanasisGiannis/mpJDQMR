@@ -28,9 +28,9 @@ class Matrix : public matrixStatistics {
           std::vector<int> &rows_, int dim_, sparseDS_t DS_ ,
           fp norm_, LinearAlgebra &la_);	
           
-      void matVec(fp *x, int ldx, fp *y, int ldy, int dimBlock); 	
-      void matVec(std::vector<fp> &x, int ldx, 
-          std::vector<fp> &y, int ldy, int dimBlock); 
+      void matVec(const fp *x, const int ldx, fp *y, const int ldy, const int dimBlock); 	
+      void matVec(const std::vector<fp> &x, const int ldx, 
+          std::vector<fp> &y, const int ldy, const int dimBlock); 
       int Dim();
       fp Norm();
 
@@ -44,9 +44,9 @@ class Matrix : public matrixStatistics {
       fp 								 m_norm{};        // matrix norm
       
   private:
-	    void matVec_COO(std::vector<fp> &x, int ldx,
-	        std::vector<fp> &y, int ldy, int dimBlock);
-	    void matVec_COO(fp *x, int ldx, fp *y, int ldy, int dimBlock);
+	    void matVec_COO(const std::vector<fp> &x, const int ldx,
+	        std::vector<fp> &y, const int ldy, const int dimBlock);
+	    void matVec_COO(const fp *x, const int ldx, fp *y, const int ldy, const int dimBlock);
 	    
 	    LinearAlgebra &m_la;
 };
@@ -60,18 +60,19 @@ class ScaledMatrix : public Matrix<fp> {
 		
 		// matVec with scaled matrix		
 		// y = Ax	
-		void matVec(std::vector<sfp> &x, int ldx, 
-		    std::vector<sfp> &y, int ldy, int dimBlock); 
+		void matVec(const std::vector<sfp> &x, const int ldx, 
+		    std::vector<sfp> &y, const int ldy, const int dimBlock); 
 		// applying to a vector x the DiagVector ; x = Dx
-		void applyScalMat(fp *x_, int ldx, int rows, int cols);
+		void applyScalMat(fp *x_, const int ldx, const int rows, const int cols);
 		// applying to a vector x the inv DiagVector ; x = inv(D)x
-    void applyScalInvMat(fp *x_, int ldx, int rows, int cols);  
+    void applyScalInvMat(fp *x_, const int ldx, const int rows, const int cols);  
     void update_matrix_shift(const fp ita);
 
 	private:
-		void matVec_COO(std::vector<sfp> &x, int ldx,
-		    std::vector<sfp> &y, int ldy, int dimBlock);
-		void matVec_COO(sfp *x, int ldx, sfp *y, int ldy, int dimBlock);
+		void matVec_COO(const std::vector<sfp> &x, const int ldx,
+		    std::vector<sfp> &y, const int ldy, const int dimBlock);
+		void matVec_COO(const sfp *x, const int ldx, 
+		  sfp *y, const int ldy, const int dimBlock);
     void init_vec_norms_COO();
 	  void init_vec_norms();  
 	  
