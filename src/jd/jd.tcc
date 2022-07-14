@@ -19,7 +19,7 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_,
     Rlocked(R_), ldRlocked(ldR_),
     basis(std::move(std::unique_ptr<Subspace<fp>>(new Subspace<fp>(mat, dim_, 
       params.numEvals, params.eigTarget, params.maxBasis,la,
-      w = std::unique_ptr<std::vector<fp>>(new std::vector<fp>),ldw, 
+      w = std::shared_ptr<std::vector<fp>>(new std::vector<fp>),ldw, 
       Q,ldQ,L,R,ldR,
       Qlocked,ldQlocked,Llocked,Rlocked,ldRlocked)))),
     sqmr(std::move(std::unique_ptr<ScaledSQMR<fp,sfp>>(new ScaledSQMR<fp,sfp>(
