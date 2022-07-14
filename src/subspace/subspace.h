@@ -13,7 +13,7 @@ class Subspace : public basisStatistics {
 	  Subspace(Matrix<fp> &mat_, const int dim_, 
         const int numEvals_, const  eigenTarget_t eigTarget_, const int maxBasis_, 
         LinearAlgebra &la_,
-        std::vector<fp> &w_, int &ldw_,	
+        std::shared_ptr<std::vector<fp>> w_, int &ldw_,	
         std::vector<fp> &Q_, int &ldQ_, 
         std::vector<fp> &L_, 
         std::vector<fp> &R_, int &ldR_, 
@@ -46,7 +46,7 @@ class Subspace : public basisStatistics {
 	  std::vector<fp> QTw; int ldQTw;
 	  
 	  /* Next vectors are manipulated by JD class */
-	  std::vector<fp> &w;    int &ldw;   // new subspace direction
+	  std::shared_ptr<std::vector<fp>> w;    int &ldw;   // new subspace direction
 	  std::vector<fp> &Q;    int &ldQ;   // ritz vectors
 	  std::vector<fp> Qprev; int ldQprev;// prev ritz vectors - for basis restart
 	  std::vector<fp> q;     int  ldq;   // eigenvectors of T

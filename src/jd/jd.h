@@ -47,10 +47,11 @@ class JD : public basisStatistics, public jdStatistics {
 	  fp						 tol;
 	  
 	  /* Shared variables between classes */
-	  std::vector<fp> w; int ldw; // common with basis and sqmr
-															  // next subspace direction
-														    // reserved at subspace class
-														    // will need to be used by inner solver
+	  std::shared_ptr<std::vector<fp>> w; int ldw;  // common with basis and sqmr
+															                    // next subspace direction
+														                      // reserved at subspace class
+														                      // will need to be used 
+														                      // by inner solver
 														    
 	  std::vector<fp> Q;			 int ldQ; 			// common with basis and sqmr
 	  std::vector<fp> L;											// common with basis and sqmr

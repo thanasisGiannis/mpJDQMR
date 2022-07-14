@@ -21,7 +21,7 @@ template<class fp>
 mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_, 
     const int numEvals_, const  eigenTarget_t eigTarget_, const int maxBasis_, 
     LinearAlgebra &la_,
-    std::vector<fp> &w_, int &ldw_,	
+    std::shared_ptr<std::vector<fp>> w_, int &ldw_,	
     std::vector<fp> &Q_, int &ldQ_, 
     std::vector<fp> &L_, 
     std::vector<fp> &R_, int &ldR_, 
@@ -37,7 +37,7 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	    blockSize(numEvals_),
 	    basisSize(0),
 	    lockedNumEvals(0),
-	    w(w_), ldw(ldw_),
+	    w{w_}, ldw(ldw_),
 	    Q(Q_), ldQ(ldQ_),
 	    L(L_),
 	    R(R_), ldR(ldR_),
@@ -103,7 +103,7 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	AV.reserve(dim*blockSize*maxBasis); ldAV = dim;
 
   // new subspace direction
-	w.reserve(dim*blockSize);  ldw  = dim;  
+	w->reserve(dim*blockSize);  ldw  = dim;  
 }
 
 template<class fp>
@@ -117,7 +117,7 @@ void mpjd::Subspace<fp>::Subspace_init_direction(){
 	std::uniform_int_distribution<int> distr(-100,100);
 
 	for(auto i=0;i<dim*numEvals;i++){
-		w.push_back(static_cast<fp>(distr(generator))/static_cast<fp>(100));
+		w->push_back(static_cast<fp>(distr(generator))/static_cast<fp>(100));
 	}
 }
 
@@ -126,7 +126,7 @@ template<class fp>
 void mpjd::Subspace<fp>::Subspace_orth_direction(){
 
 	auto VV = static_cast<fp*>(V.data());
-	auto vv = static_cast<fp*>(w.data());
+	auto vv = static_cast<fp*>(w->data());
 
 	int rows = dim;
 	int cols = basisSize*blockSize;
@@ -192,12 +192,12 @@ void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
   fp minus_one = static_cast<fp>(-1.0);
   fp zero      = static_cast<fp>( 0.0);
   
-	mat.matVec(w,ldw, Aw, ldAw, blockSize);     // Aw  = A*w
+	mat.matVec(*w,ldw, Aw, ldAw, blockSize);     // Aw  = A*w
 	
 	AV.insert(AV.end(), Aw.begin() , Aw.end()); // [AV = [AV Aw]
 
 	fp *Aw_ = Aw.data();
-	fp *w_  =  w.data();
+	fp *w_  =  w->data();
 	fp *T_  =  T.data();
 	fp *V_  =  V.data();
 		
@@ -222,7 +222,7 @@ template<class fp>
 void mpjd::Subspace<fp>::Subspace_update_basis(){
 
 	// V = [V w]
-	V.insert(V.end(), w.begin() , w.end());
+	V.insert(V.end(), w->begin() , w->end());
 	basisSize = basisSize + 1;
 }
 
