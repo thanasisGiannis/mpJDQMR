@@ -53,7 +53,7 @@ class JD : public basisStatistics, public jdStatistics {
 														                      // will need to be used 
 														                      // by inner solver
 														    
-	  std::vector<fp> Q;			 int ldQ; 			// common with basis and sqmr
+	  std::shared_ptr<std::vector<fp>> Q;			 int ldQ; 			// common with basis and sqmr
 	  std::vector<fp> L;											// common with basis and sqmr
 	  std::vector<fp> R;			 int ldR;				// common with basis and sqmr
 

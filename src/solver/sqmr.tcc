@@ -1,9 +1,10 @@
 template<class fp>
-mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int &ldQ_,
+mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, 
+    std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
     std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
     std::vector<fp> &Qlocked_, int &ldQlocked_)
     : mat(mat_),
-      Q(Q_), ldQ(ldQ_),
+      Q{Q_}, ldQ(ldQ_),
       L(L_),
       R(R_), ldR(ldR_),
       Qlocked(Qlocked_), ldQlocked(ldQlocked){}
@@ -16,7 +17,8 @@ std::vector<fp> mpjd::SQMR<fp>::solve(int &iters){
 }
 
 template<class fp,class sfp>
-mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int &ldQ_,
+mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, 
+    std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
     std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
     std::vector<fp> &Qlocked_, int &ldQlocked_, LinearAlgebra &la_) 
     : SQMR<fp>(mat_,Q_,ldQ_,L_,R_,ldR_,Qlocked_,ldQlocked_),
@@ -24,7 +26,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, std::vector<fp> &Q_, int 
       la(la_){
     
     // Ritz vectors
-    sQ.reserve(this->Q.capacity()); ldsQ = this->ldQ; 
+    sQ.reserve(this->Q->capacity()); ldsQ = this->ldQ; 
     sQ.insert(sQ.begin(),sQ.capacity(),static_cast<sfp>(0.0));
     
     // Locked Ritz vectors
@@ -70,8 +72,8 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
   auto to_fp  = [](const sfp d){return static_cast<fp>(d);};
   
   // cast to solver precision 
-  sQ.clear(); sQ.resize(this->Q.size()); ldsQ = this->ldQ;
-  std::transform(this->Q.begin(),this->Q.end(),sQ.begin(),to_sfp);
+  sQ.clear(); sQ.resize(this->Q->size()); ldsQ = this->ldQ;
+  std::transform(this->Q->begin(),this->Q->end(),sQ.begin(),to_sfp);
   
   //ldsQlocked = this->ldQlocked;
   sQlocked.clear(); sQlocked.resize(this->Qlocked.size());  

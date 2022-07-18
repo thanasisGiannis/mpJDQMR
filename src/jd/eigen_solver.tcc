@@ -25,7 +25,8 @@ void mpjd::JD<fp, sfp>::solve() {
     innerIters=0;
     //	w = (I-QlockedQlocked')(I-QQ')(A-L)(I-QlockedQlocked')(I-QQ')\R
     *w = sqmr->solve(innerIters);                
-     
+    //*w = R;
+    
    	updateNumInnerLoop(innerIters);             // statistics
    	
    	//w = R;

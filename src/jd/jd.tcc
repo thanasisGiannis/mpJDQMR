@@ -20,10 +20,10 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_,
     basis(std::move(std::unique_ptr<Subspace<fp>>(new Subspace<fp>(mat, dim_, 
       params.numEvals, params.eigTarget, params.maxBasis,la,
       w = std::shared_ptr<std::vector<fp>>(new std::vector<fp>),ldw, 
-      Q,ldQ,L,R,ldR,
+      Q = std::shared_ptr<std::vector<fp>>(new std::vector<fp>),ldQ,L,R,ldR,
       Qlocked,ldQlocked,Llocked,Rlocked,ldRlocked)))),
     sqmr(std::move(std::unique_ptr<ScaledSQMR<fp,sfp>>(new ScaledSQMR<fp,sfp>(
-      mat, Q, ldQ,L, R, ldR, Qlocked, ldQlocked, la)))),										
+      mat, Q , ldQ,L, R, ldR, Qlocked, ldQlocked, la)))),										
     eigTarget(params.eigTarget) {}
 
 template<class fp, class sfp>
