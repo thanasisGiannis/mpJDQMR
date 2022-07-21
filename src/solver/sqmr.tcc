@@ -1,11 +1,12 @@
 template<class fp>
 mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, 
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
-    std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
+    std::shared_ptr<std::vector<fp>> L_, 
+    std::vector<fp> &R_, int &ldR_,
     std::vector<fp> &Qlocked_, int &ldQlocked_)
     : mat(mat_),
       Q{Q_}, ldQ(ldQ_),
-      L(L_),
+      L{L_},
       R(R_), ldR(ldR_),
       Qlocked(Qlocked_), ldQlocked(ldQlocked){}
 	
@@ -19,7 +20,8 @@ std::vector<fp> mpjd::SQMR<fp>::solve(int &iters){
 template<class fp,class sfp>
 mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, 
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
-    std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
+    std::shared_ptr<std::vector<fp>> L_, 
+    std::vector<fp> &R_, int &ldR_,
     std::vector<fp> &Qlocked_, int &ldQlocked_, LinearAlgebra &la_) 
     : SQMR<fp>(mat_,Q_,ldQ_,L_,R_,ldR_,Qlocked_,ldQlocked_),
       mat(new ScaledMatrix<fp,sfp>(mat_)),
@@ -55,7 +57,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_,
     w.reserve(mat->Dim());
     w.insert(w.begin(),w.capacity(),static_cast<sfp>(0.0));
 
-    QTd.reserve(this->L.capacity());// L.size() = numEvals;                    
+    QTd.reserve(this->L->capacity());// L.size() = numEvals;                    
     QTd.insert(QTd.begin(),QTd.capacity(),static_cast<sfp>(0.0));
 
     
@@ -86,10 +88,10 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
   auto iDR  = this->R;
   int ldiDR = this->ldR;
   /* Call the actual solver */
-  for(auto i=0; i < this->L.size(); i++){
+  for(auto i=0; i < this->L->size(); i++){
   
     /* Change Matrix shift*/
-    mat->update_matrix_shift(*(this->L.data()+i));
+    mat->update_matrix_shift(*(this->L->data()+i));
    
     /* Casting input vectors into the inner loop precision */ 
     /* cast to solver precision ONLY the vectors to be used*/  
@@ -117,7 +119,7 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
     std::transform(x.begin(),x.end(), XX.end()-mat->Dim(),to_fp);
   }
   // DR = D\R
-  mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L.size()); 
+  mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L->size()); 
   return XX;
 }
 
@@ -125,7 +127,7 @@ template<class fp, class sfp>
 int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
 
     auto dim = mat->Dim();
-    auto numEvals = this->L.size();
+    auto numEvals = this->L->size();
     
     int numLocked = sQlocked.size()/dim;
 

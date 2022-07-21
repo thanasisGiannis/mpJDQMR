@@ -15,7 +15,7 @@ class Subspace : public basisStatistics {
         LinearAlgebra &la_,
         std::shared_ptr<std::vector<fp>> w_, int &ldw_,	
         std::shared_ptr<std::vector<fp>> Q_, int &ldQ_, 
-        std::vector<fp> &L_, 
+        std::shared_ptr<std::vector<fp>> L_, 
         std::vector<fp> &R_, int &ldR_, 
         std::vector<fp> &Qlocked_, int &ldQlocked_, 
         std::vector<fp> &Llocked_,
@@ -48,10 +48,10 @@ class Subspace : public basisStatistics {
 	  /* Next vectors are manipulated by JD class */
 	  std::shared_ptr<std::vector<fp>> w;    int &ldw;   // new subspace direction
 	  std::shared_ptr<std::vector<fp>> Q;    int &ldQ;   // ritz vectors
-	  std::vector<fp> Qprev; int ldQprev;// prev ritz vectors - for basis restart
-	  std::vector<fp> q;     int  ldq;   // eigenvectors of T
-	  std::vector<fp> &L; 					     // ritz values
-	  std::vector<fp> &R; int &ldR;      // eigenresidual 
+	  std::vector<fp> Qprev; int ldQprev; // prev ritz vectors - for basis restart
+	  std::vector<fp> q;     int  ldq;    // eigenvectors of T
+	  std::shared_ptr<std::vector<fp>> L; // ritz values
+	  std::vector<fp> &R; int &ldR;       // eigenresidual 
 	  
 	  std::vector<fp> qq; int  ldqq; //buffer for syev() 
 	  std::vector<fp> LL;						 //buffer for syev()

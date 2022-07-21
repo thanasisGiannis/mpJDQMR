@@ -31,7 +31,7 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
     LinearAlgebra &la_,
     std::shared_ptr<std::vector<fp>> w_, int &ldw_,	
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_, 
-    std::vector<fp> &L_, 
+    std::shared_ptr<std::vector<fp>> L_, 
     std::vector<fp> &R_, int &ldR_, 
     std::vector<fp> &Qlocked_, int &ldQlocked_, 
     std::vector<fp> &Llocked_,
@@ -47,7 +47,7 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	    lockedNumEvals(0),
 	    w{w_}, ldw(ldw_),
 	    Q{Q_}, ldQ(ldQ_),
-	    L(L_),
+	    L{L_},
 	    R(R_), ldR(ldR_),
 	    Qlocked(Qlocked_), ldQlocked(ldQlocked_),
 	    Llocked(Llocked_),
@@ -81,7 +81,7 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	init_vec_zeros(Qprev,dim*numEvals);
 
   // locked eigenvalues
-	L.reserve(numEvals); 				        
+	L->reserve(numEvals); 				        
 	init_vec_zeros(L,numEvals);
 
   // eigen residual 
@@ -247,7 +247,7 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
     extract the wanted ones
     LL contains eigenvalues in descending order
   */	   
-	L.clear(); // Clear previous
+	L->clear(); // Clear previous
 	q.clear(); // 
 
 	auto LLstart_ = LL.begin();
@@ -275,7 +275,7 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	}
 
 
-	L.insert(L.end(), LLstart_ , LLend_);
+	L->insert(L->end(), LLstart_ , LLend_);
 	q.insert(q.end(), qqstart_, qqend_);
 
 	/* Q = V*qq */
@@ -295,7 +295,7 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	fp *AV_ = AV.data();
 	fp *q_  =  q.data();
 	fp *Q_  =  Q->data();
-	fp *L_  =  L.data();
+	fp *L_  =  L->data();
 	fp *R_  =  R.data();
 	
 	fp one        = static_cast<fp>(1.0);
@@ -331,7 +331,7 @@ bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
 #if 1	// TODO: Locking procedure - the #else code block
 	if(conv_num.size() == numEvals){
       Rlocked = R;
-      Llocked = L;
+      Llocked = *L;
       Qlocked = *Q;
       
       lockedNumEvals = numEvals; 

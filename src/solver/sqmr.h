@@ -14,14 +14,15 @@ class SQMR {
   public:
 	  SQMR() = delete;
 	  SQMR(Matrix<fp> &mat_, std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
-	        std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
+	        std::shared_ptr<std::vector<fp>> L_,
+	        std::vector<fp> &R_, int &ldR_,
 	        std::vector<fp> &Qlocked_, int &ldQlocked_);
 	  virtual std::vector<fp> solve(int &iters);
 
   protected:
     LinearAlgebra   la;
 	  std::shared_ptr<std::vector<fp>> Q; int &ldQ; // Ritz vectors
-	  std::vector<fp> &L;                       // Ritz values
+	  std::shared_ptr<std::vector<fp>> L;           // Ritz values
 	  std::vector<fp> &R;       int &ldR;       // Residual vector
 	  std::vector<fp> &Qlocked; int &ldQlocked; // Locked Ritz vectors
 	  Matrix<fp>      &mat;                     // Coefficient Matrix
@@ -33,7 +34,8 @@ class ScaledSQMR : public SQMR<fp> {
   public:
 	  ScaledSQMR() = delete;
 	  ScaledSQMR(Matrix<fp> &mat_, std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
-	        std::vector<fp> &L_, std::vector<fp> &R_, int &ldR_,
+	        std::shared_ptr<std::vector<fp>> L_, 
+	        std::vector<fp> &R_, int &ldR_,
 	        std::vector<fp> &Qlocked_, int &ldQlocked_, LinearAlgebra &la_);
 	  virtual std::vector<fp> solve(int &iters);
 
