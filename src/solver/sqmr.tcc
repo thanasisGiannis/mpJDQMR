@@ -2,26 +2,26 @@ template<class fp>
 mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, 
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
     std::shared_ptr<std::vector<fp>> L_, 
-    std::vector<fp> &R_, int &ldR_,
+    std::shared_ptr<std::vector<fp>> R_, int &ldR_,
     std::vector<fp> &Qlocked_, int &ldQlocked_)
     : mat(mat_),
       Q{Q_}, ldQ(ldQ_),
       L{L_},
-      R(R_), ldR(ldR_),
+      R{R_}, ldR(ldR_),
       Qlocked(Qlocked_), ldQlocked(ldQlocked){}
 	
 template<class fp>
 std::vector<fp> mpjd::SQMR<fp>::solve(int &iters){
 
   iters = 0;
-  return R;
+  return *R; // this is for testing purpose
 }
 
 template<class fp,class sfp>
 mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, 
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
     std::shared_ptr<std::vector<fp>> L_, 
-    std::vector<fp> &R_, int &ldR_,
+    std::shared_ptr<std::vector<fp>> R_, int &ldR_,
     std::vector<fp> &Qlocked_, int &ldQlocked_, LinearAlgebra &la_) 
     : SQMR<fp>(mat_,Q_,ldQ_,L_,R_,ldR_,Qlocked_,ldQlocked_),
       mat(new ScaledMatrix<fp,sfp>(mat_)),
@@ -39,7 +39,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_,
     sR.insert(sR.begin(),sR.capacity(),static_cast<sfp>(0.0));
     
 
-    XX.reserve(this->R.capacity()); 
+    XX.reserve(this->R->capacity()); 
     
     /* lower precision data area */
     x.reserve(mat->Dim());                    
@@ -95,15 +95,15 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
    
     /* Casting input vectors into the inner loop precision */ 
     /* cast to solver precision ONLY the vectors to be used*/  
-    mat->applyScalInvMat(iDR.data()+ldiDR*i,ldiDR,mat->Dim(),1); // DR = D\R
+    mat->applyScalInvMat(iDR->data()+ldiDR*i,ldiDR,mat->Dim(),1); // DR = D\R
     
-    auto rb   = iDR.begin();
+    auto rb   = iDR->begin();
     auto ldrb = ldiDR;
 
     // scale to right hand side vector
-    auto nrmR = la.nrm2(mat->Dim(), iDR.data()+(0+i*ldrb),1);
+    auto nrmR = la.nrm2(mat->Dim(), iDR->data()+(0+i*ldrb),1);
     nrmR = static_cast<sfp>(1)/nrmR;
-    la.scal(mat->Dim(), nrmR, iDR.data()+(0+i*ldrb), 1);
+    la.scal(mat->Dim(), nrmR, iDR->data()+(0+i*ldrb), 1);
 
     // cast to solver precision 
     sR.clear(); sR.resize(mat->Dim());
