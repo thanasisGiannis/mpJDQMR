@@ -62,9 +62,14 @@ int main() {
 	
 	std::vector<double>     x;//{1,1,1};
 	std::vector<double>     y;//{0,0,0};
-	std::vector<double> 		Q{}; int ldQ;
-	std::vector<double>     L{}; 
-	std::vector<double>			R{}; int ldR;
+	
+	std::shared_ptr<std::vector<double>> Q{}; int ldQ;
+	std::shared_ptr<std::vector<double>> L{}; 
+	std::shared_ptr<std::vector<double>> R{}; int ldR;
+	
+	Q = std::shared_ptr<std::vector<double>>(new std::vector<double>);
+	L = std::shared_ptr<std::vector<double>>(new std::vector<double>);
+	R = std::shared_ptr<std::vector<double>>(new std::vector<double>);
 	
 	
 	int    dim{};
@@ -89,11 +94,11 @@ int main() {
 			
 	jd.solve();	
 	
-	double *Q_ = Q.data();
+	double *Q_ = Q->data();
 	double  rho{};
 	
 	for(auto j=0;j<params.numEvals;j++){
-	  rho = *(L.data() + j);
+	  rho = *(L->data() + j);
 	  std::cout << "rho("<<j<<") = " << rho << std::endl;
 	}
 }

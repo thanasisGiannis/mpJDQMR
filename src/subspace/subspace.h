@@ -17,9 +17,9 @@ class Subspace : public basisStatistics {
         std::shared_ptr<std::vector<fp>> Q_, int &ldQ_, 
         std::shared_ptr<std::vector<fp>> L_, 
         std::shared_ptr<std::vector<fp>> R_, int &ldR_, 
-        std::vector<fp> &Qlocked_, int &ldQlocked_, 
-        std::vector<fp> &Llocked_,
-        std::vector<fp> &Rlocked_, int &ldRlocked_);
+        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
+        std::shared_ptr<std::vector<fp>> Llocked_,
+        std::shared_ptr<std::vector<fp>> Rlocked_, int &ldRlocked_);
 
 	  
 	  void Subspace_init_direction();
@@ -57,9 +57,9 @@ class Subspace : public basisStatistics {
 	  std::vector<fp> LL;						 //buffer for syev()
 
 	  
-	  std::vector<fp> &Qlocked; int &ldQlocked; // locked eigenvectors
-	  std::vector<fp> &Llocked; 								// locked eigenvalues
-	  std::vector<fp> &Rlocked; int &ldRlocked; // locked eigen residual 
+	  std::shared_ptr<std::vector<fp>> Qlocked; int &ldQlocked;// locked eigenvectors
+	  std::shared_ptr<std::vector<fp>> Llocked; 							 // locked eigenvalues
+	  std::shared_ptr<std::vector<fp>> Rlocked; int &ldRlocked;// locked residual 
 	  
 	  
 	  int blockSize;		// non locked blockSize [=numEvals-lockedNumEvals]

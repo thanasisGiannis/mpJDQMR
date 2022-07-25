@@ -33,9 +33,9 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_, 
     std::shared_ptr<std::vector<fp>> L_, 
     std::shared_ptr<std::vector<fp>> R_, int &ldR_, 
-    std::vector<fp> &Qlocked_, int &ldQlocked_, 
-    std::vector<fp> &Llocked_,
-    std::vector<fp> &Rlocked_, int &ldRlocked_)
+    std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
+    std::shared_ptr<std::vector<fp>> Llocked_,
+    std::shared_ptr<std::vector<fp>> Rlocked_, int &ldRlocked_)
     : la(la_),
 	    mat(mat_),
 	    dim(dim_),
@@ -49,9 +49,9 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	    Q{Q_}, ldQ(ldQ_),
 	    L{L_},
 	    R{R_}, ldR(ldR_),
-	    Qlocked(Qlocked_), ldQlocked(ldQlocked_),
-	    Llocked(Llocked_),
-	    Rlocked(Rlocked_), ldRlocked(ldRlocked_) {
+	    Qlocked{Qlocked_}, ldQlocked(ldQlocked_),
+	    Llocked{Llocked_},
+	    Rlocked{Rlocked_}, ldRlocked(ldRlocked_) {
 
   // subspace basis
 	V.reserve(dim*maxBasis*numEvals); ldV = dim; 
@@ -89,20 +89,20 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	init_vec_zeros(R,dim*numEvals);
 
 	// locked eigenvectors
-	Qlocked.reserve(dim*numEvals); ldQlocked = dim; 
-	Qlocked.clear();
-
-  // locked eigenvectors
-  QTw.reserve(numEvals*numEvals); ldQTw = numEvals ; 
-	init_vec_zeros(QTw,numEvals*numEvals);
+	Qlocked->reserve(dim*numEvals); ldQlocked = dim; 
+	Qlocked->clear();
 
   // locked eigenvalues
-	Llocked.reserve(numEvals); 								      
-	Llocked.clear();
+	Llocked->reserve(numEvals); 								      
+	Llocked->clear();
 
   // locked eigen residual 
-	Rlocked.reserve(dim*numEvals); ldRlocked = dim; 
-	Rlocked.clear();
+	Rlocked->reserve(dim*numEvals); ldRlocked = dim; 
+	Rlocked->clear();
+	
+	// locked eigenvectors
+  QTw.reserve(numEvals*numEvals); ldQTw = numEvals ; 
+	init_vec_zeros(QTw,numEvals*numEvals);
 	
 	// tmp vector to used in Av
 	Aw.reserve(dim*blockSize); ldAw = dim;  
@@ -330,9 +330,9 @@ bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
 
 #if 1	// TODO: Locking procedure - the #else code block
 	if(conv_num.size() == numEvals){
-      Rlocked = *R;
-      Llocked = *L;
-      Qlocked = *Q;
+      *Rlocked = *R;
+      *Llocked = *L;
+      *Qlocked = *Q;
       
       lockedNumEvals = numEvals; 
 	    numEvals       = 0;	
@@ -342,41 +342,8 @@ bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
       return false;
 	}
 #else
-	bool restart = false;
-	while(conv_num.size() > 0){
-      restart = true;
-	    /* pop last element of conv as j*/
-	    int j = conv_num.back();
-	    conv_num.pop_back();		
-	    
-	     
-		  // insert j-th eigenpair
-	    Rlocked.insert(Rlocked.end(), R.begin() + (0+j*ldR),
-	        R.begin() + (0 + (j+1)*ldR));
-	    Qlocked.insert(Qlocked.end(), Q.begin() + (0+j*ldQ), 
-	        Q.begin() + (0 + (j+1)*ldQ));
-	    Llocked.push_back(L.at(j));
 
-	    // remove j-th eigenpair
-	    R.erase(R.begin()+ (0+j*ldQ),R.begin() +(0 + (j+1)*ldQ-1));
-	    Q.erase(Q.begin()+ (0+j*ldQ),Q.begin() +(0 + (j+1)*ldQ-1));
-	    L.erase(L.begin() + j);
-	    
-	    /* update variable conserning problem dimesionalities*/
-	    lockedNumEvals++; 
-	    numEvals--;	
-	    blockSize--;
-	}	
-	
-	if(restart){
-	  Subspace_restart();
-	}
-	
-	if(numEvals <= 0){
-		return true;
-	}else{
-		return false;
-	}	
+
 #endif
 };
 

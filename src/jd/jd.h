@@ -30,8 +30,11 @@ class JD : public basisStatistics, public jdStatistics {
   public:
 	  JD() = delete;
 	  JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
-			  int dim_, sparseDS_t DS_, std::vector<fp> &Q_, int &ldQ_, std::vector<fp> &L_, 
-			  std::vector<fp> &R_, int &ldR_, fp norm_, struct mpjdParam &params); 
+			  int dim_, sparseDS_t DS_, 
+			  std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
+			  std::shared_ptr<std::vector<fp>> L_, 
+			  std::shared_ptr<std::vector<fp>> R_, int &ldR_, 
+			  fp norm_, struct mpjdParam &params); 
 
 	  void solve();									 
 
@@ -52,14 +55,16 @@ class JD : public basisStatistics, public jdStatistics {
 														                      // reserved at subspace class
 														                      // will need to be used 
 														                      // by inner solver
-														    
+		
+		// common with basis and sqmr												    
 	  std::shared_ptr<std::vector<fp>> Q; int ldQ; // common with basis and sqmr
 	  std::shared_ptr<std::vector<fp>> L;          // common with basis and sqmr
 	  std::shared_ptr<std::vector<fp>> R; int ldR; // common with basis and sqmr
 
-	  std::vector<fp> &Qlocked; int ldQlocked; // common with basis and sqmr
-	  std::vector<fp> &Llocked; 								// common with basis and sqmr
-	  std::vector<fp> &Rlocked; int ldRlocked; // locked eigen residual 
+    // common with basis and sqmr
+	  std::shared_ptr<std::vector<fp>> Qlocked; int ldQlocked;  
+	  std::shared_ptr<std::vector<fp>> Llocked; 								
+	  std::shared_ptr<std::vector<fp>> Rlocked; int ldRlocked;  
 
 	  /* CAUTION THIS SHOULD BE AFTER VARIABLES */
 	  LinearAlgebra      la;
