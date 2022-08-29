@@ -16,6 +16,9 @@ void mpjd::JD<fp, sfp>::solve() {
     
     basis->Subspace_eig_residual();             // R = AV*q-Q*L
 
+    if( parameters.printIterStats )             // this has to be right after
+      printIterationStats(iter);                // the residual vector calculation
+      
     if( basis->Check_Convergence(tol) ) {
       break;
     }
@@ -36,9 +39,7 @@ void mpjd::JD<fp, sfp>::solve() {
     basis->Subspace_project_at_new_direction(); // T= w'*A*w // 
     basis->Subspace_update_basis();             // V = [ V w]
     basis->Subspace_projected_mat_eig();        // [q,L] = eig(T)
-
-    if( parameters.printIterStats ) 
-      printIterationStats(iter);
+   
   }
 
   if( parameters.printStats ){
