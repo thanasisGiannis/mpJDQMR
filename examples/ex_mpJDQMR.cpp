@@ -99,7 +99,11 @@ int main() {
 	
 	for(auto j=0;j<params.numEvals;j++){
 	  rho = *(L->data() + j);
-	  std::cout << "rho("<<j<<") = " << rho << std::endl;
+	  std::cout << "ritz("<<j<<") = " << rho << std::endl;
+	  double *R_ = R->data();
+	  rho = la.nrm2(dim,&R_[0+j*ldR],1);
+	  
+	  std::cout << "rho("<<j<<") = " << rho/norm << std::endl;
 	}
 }
 
