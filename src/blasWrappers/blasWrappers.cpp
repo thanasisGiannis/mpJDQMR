@@ -74,7 +74,10 @@ void mpjd::LinearAlgebra::axpy(const int dim, const double alpha,
 
 double mpjd::LinearAlgebra::nrm2(const int dim, const double *x, const int incx) {
 
-	return cblas_dnrm2(dim, x, incx);
+	//return cblas_dnrm2(dim, x, incx);
+	MKL_INT dim_  = static_cast<MKL_INT>(dim);
+	MKL_INT incx_ = static_cast<MKL_INT>(incx);
+	return cblas_dnrm2(dim_, x, incx_);
 }
 
 void mpjd::LinearAlgebra::scal(const int dim, const double alpha, 
@@ -140,7 +143,9 @@ void mpjd::LinearAlgebra::axpy(const int dim, const float alpha,
 
 float mpjd::LinearAlgebra::nrm2(const int dim, const float *x, const int incx) {
 
-	return cblas_snrm2(dim, x, incx);
+	MKL_INT dim_  = static_cast<MKL_INT>(dim);
+	MKL_INT incx_ = static_cast<MKL_INT>(incx);
+	return cblas_snrm2(dim_, x, incx_);
 }
 
 void mpjd::LinearAlgebra::scal(const int dim, const float alpha, 

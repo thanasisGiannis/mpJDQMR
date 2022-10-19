@@ -23,7 +23,7 @@ set_target_properties(lib_mpJDQMR PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CU
 #  target_link_libraries(lib_mpJDQMR PUBLIC OpenMP::OpenMP_CXX)
 #endif()
 
-target_link_libraries(lib_mpJDQMR PUBLIC OpenMP::OpenMP_CXX
+target_link_libraries(lib_mpJDQMR PUBLIC OpenMP::OpenMP_CXX -g
                       -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core 
 											-lmkl_blacs_intelmpi_ilp64 
 											-fopenmp -lgomp -lpthread

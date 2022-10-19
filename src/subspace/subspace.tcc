@@ -90,15 +90,18 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 
 	// locked eigenvectors
 	Qlocked->reserve(dim*numEvals); ldQlocked = dim; 
-	Qlocked->clear();
-
+	//Qlocked->clear();
+  init_vec_zeros(Qlocked,dim*numEvals);
+  
   // locked eigenvalues
 	Llocked->reserve(numEvals); 								      
-	Llocked->clear();
+	//Llocked->clear();
+  init_vec_zeros(Llocked,numEvals);
 
   // locked eigen residual 
 	Rlocked->reserve(dim*numEvals); ldRlocked = dim; 
-	Rlocked->clear();
+	//Rlocked->clear();
+	init_vec_zeros(Rlocked,dim*numEvals);
 	
 	// locked eigenvectors
   QTw.reserve(numEvals*numEvals); ldQTw = numEvals ; 
@@ -329,7 +332,7 @@ bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
 	}
 
 #if 1	// TODO: Locking procedure - the #else code block
-	if(conv_num.size() == numEvals){
+	if(conv_num.size() >= numEvals){
       *Rlocked = *R;
       *Llocked = *L;
       *Qlocked = *Q;
