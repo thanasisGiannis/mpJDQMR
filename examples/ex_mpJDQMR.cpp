@@ -81,7 +81,7 @@ int main() {
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
   mpjd::mpjdParam params;
-  params.numEvals = 2;
+  params.numEvals = 5;
   params.maxIters = 3*dim;
   params.dim = dim;
   params.tol = 1e-08;
@@ -89,7 +89,7 @@ int main() {
   params.printIterStats = true;
 
 
-	mpjd::JD<double,half> jd{vals, rows, cols, params.dim,
+	mpjd::JD<double,float> jd{vals, rows, cols, params.dim,
 	  mpjd::sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, params};
 			
 	jd.solve();	
@@ -98,6 +98,7 @@ int main() {
 	double *R_ = R->data();
 	double  rho{};
 		
+  std::cout << L->size() << std::endl;
 	for(auto j=0;j<params.numEvals;j++){
 	  
 	  rho = la.nrm2(params.dim,&R_[0+j*ldR],1);

@@ -90,18 +90,18 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 
 	// locked eigenvectors
 	Qlocked->reserve(dim*numEvals); ldQlocked = dim; 
-	//Qlocked->clear();
-  init_vec_zeros(Qlocked,dim*numEvals);
+	Qlocked->clear();
+  //init_vec_zeros(Qlocked,dim*numEvals);
   
   // locked eigenvalues
 	Llocked->reserve(numEvals); 								      
-	//Llocked->clear();
-  init_vec_zeros(Llocked,numEvals);
+	Llocked->clear();
+  //init_vec_zeros(Llocked,numEvals);
 
   // locked eigen residual 
 	Rlocked->reserve(dim*numEvals); ldRlocked = dim; 
-	//Rlocked->clear();
-	init_vec_zeros(Rlocked,dim*numEvals);
+	Rlocked->clear();
+	//init_vec_zeros(Rlocked,dim*numEvals);
 	
 	// locked eigenvectors
   QTw.reserve(numEvals*numEvals); ldQTw = numEvals ; 
@@ -123,6 +123,7 @@ void mpjd::Subspace<fp>::Subspace_init_direction(){
 	/*
 		Initialize basis w with random vals
 	*/
+	
 	std::random_device rand_dev;
 	std::mt19937 			 generator(rand_dev());
 	std::uniform_int_distribution<int> distr(-100,100);
@@ -142,29 +143,43 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 	int rows = dim;
 	int cols = basisSize*blockSize;
   
+  fp *QQ = static_cast<fp*>(Qlocked->data());
+  // here a locking procedure should take place
+  /* w = orth(Qlocked,w) */
+	for(int j=0; j < blockSize; j++){
+		for(int i=0; i < Llocked->size() ; i++){
+		    // alpha = Qlocked(i)'v
+				fp alpha {-la.dot(rows,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1)};
+				// v = v - Qlocked(i)*alpha
+				la.axpy(rows,alpha,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1); 
+		}	
+	}
+	
   VV = static_cast<fp*>(V.data());
   /* w = orth(V,w) */
 	for(int j=0; j < blockSize; j++){
 		for(int i=0; i < cols ; i++){
-		    // alpha = V(i)'v
-				fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldV],1)};
+		    // alpha = V(i)'w
+				fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldw],1)};
 				// v = v - V(i)*alpha
-				la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldV],1); 
+				la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldw],1); 
 		}	
 	}
-
+  
+  
+  
   /* w = orth(w) */
   for(auto k=0;k<3;k++){
 	  for(int j=0; j < blockSize; j++){
 		  for(int i=0; i < j ; i++){
 		      // alpha = V(i)'v
-				  auto alpha {-la.dot(rows,&vv[0+i*ldV],1,&vv[0+j*ldV],1)};
+				  auto alpha {-la.dot(rows,&vv[0+i*ldw],1,&vv[0+j*ldV],1)};
 				  // v = v - V(i)*alpha
-				  la.axpy(rows,alpha,&vv[0+i*ldV],1,&vv[0+j*ldV],1);     	
+				  la.axpy(rows,alpha,&vv[0+i*ldw],1,&vv[0+j*ldV],1);     	
 		  }	
 		  // v = v/norm(v)
-		  auto alpha {la.nrm2(rows,&vv[0+j*ldV],1)}	;
-		  la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldV],1);    
+		  auto alpha {la.nrm2(rows,&vv[0+j*ldw],1)}	;
+		  la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldw],1);    
 	  }
 	}  
 	updateOrthogonalizations(1);
@@ -173,7 +188,7 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_orth_basis(){
 
-	auto VV = static_cast<fp*>(V.data());
+  auto VV = static_cast<fp*>(V.data());
 
 	int rows = dim;
 	int cols = basisSize*numEvals;
@@ -239,7 +254,7 @@ void mpjd::Subspace<fp>::Subspace_update_basis(){
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
-
+  
 	qq = T; // copy data values from T to qq 
 					// eig replaces QQ with eigenvectors of T
 	la.eig((basisSize)*blockSize, qq.data() , ldqq, LL.data(), 
@@ -307,6 +322,7 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	
 	*R = *Q;
 	
+	
 	// R = R*L = Q*L 
 	for(auto j=0; j<numEvals; j++){
 		la.scal(dim, L_[j], &R_[0+j*ldR], 1);
@@ -320,34 +336,86 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 template<class fp>
 bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
 
+
 	fp *R_ = R->data();
 	fp  rho{};
-  conv_num.clear();
+  std::vector<fp> tmpR;
+  std::vector<fp> tmpQ;
+  std::vector<fp> tmpQprev;
+  std::vector<fp> tmpL;
+  std::vector<fp> rhos;
   
-	for(auto j=0;j<numEvals;j++){
-		rho = la.nrm2(dim,&R_[0+j*ldR],1);
-		if(rho < tol*mat.Norm()){
-			conv_num.push_back(j);
+  
+  int convPairsNum = 0;
+	for(auto c=0; c<numEvals; c++){
+		rhos.push_back(la.nrm2(dim,&R_[0+c*ldR],1)); // calculate all residuals
+		if(rhos[c] < tol*mat.Norm()){
+		  convPairsNum++;
+		}
+  }  
+  
+  if(convPairsNum == 0) return false; // if non converged just return
+  
+  /*
+    THIS IS A LOCKING PROCEDURE IN A BLOCKING JACOBI DAVIDSON METHOD
+  */
+  for(auto c=0; c<numEvals; c++){
+		if(rhos[c] < tol*mat.Norm()){
+		  // if is a converged eigenpair
+		  for(int r=0; r<dim; r++){
+		    Qlocked->push_back(Q->data()[r+c*ldQ]); 
+		    Rlocked->push_back(R->data()[r+c*ldR]);
+		  }	
+		  Llocked->push_back(L->data()[c]);
+		}else{
+		  // if is not a converged eigenpair
+		  for(int r=0; r<dim; r++){
+
+		    tmpQ.push_back(Q->data()[r+c*ldQ]);
+		    tmpQprev.push_back(Qprev.data()[r+c*ldQprev]);
+		    tmpR.push_back(R->data()[r+c*ldR]);
+		  }	
+		  tmpL.push_back(L->data()[c]);
 		}
 	}
+  
+  
+  
+  
+  if(numEvals == 0){
+    Q->clear();
+    L->clear();
+    R->clear();
+    Qprev.clear();
+    
+    return true;
+  }
+  
+	lockedNumEvals += convPairsNum; 
+  //numEvals       -= convPairsNum;	
+  blockSize      -= convPairsNum;
+  
+  Q->resize(dim*blockSize);
+	Qprev.resize(dim*blockSize);
+	R->resize(dim*blockSize);
+	L->resize(blockSize);
+	
+	
+  
+  
+	std::copy(tmpQ.begin(),tmpQ.end(),Q->begin());		
+	std::copy(tmpQprev.begin(),tmpQprev.end(),Qprev.begin());		
+	
+  std::copy(tmpR.begin(),tmpR.end(),R->begin());		
+  std::copy(tmpL.begin(),tmpL.end(),L->begin());		
 
-#if 1	// TODO: Locking procedure - the #else code block
-	if(conv_num.size() >= numEvals){
-      *Rlocked = *R;
-      *Llocked = *L;
-      *Qlocked = *Q;
-      
-      lockedNumEvals = numEvals; 
-	    numEvals       = 0;	
-	    blockSize      = 0;
-      return true;
-	}else{
-      return false;
-	}
-#else
+  if(blockSize <= 0) return true;
+  
+  
+  if( convPairsNum > 0 ) Subspace_restart();
+ 
+  return false;
 
-
-#endif
 };
 
 
@@ -370,6 +438,7 @@ void mpjd::Subspace<fp>::Subspace_restart(){
   */
   
   /* V = orth([Qprev Q R]) */
+  
   V.clear(); 
   V.insert(V.end(), Qprev.begin(), Qprev.end());
   V.insert(V.end(), Q->begin(), Q->end());
