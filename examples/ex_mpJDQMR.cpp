@@ -89,7 +89,7 @@ int main() {
   params.printIterStats = true;
 
 
-	mpjd::JD<double,float> jd{vals, rows, cols, params.dim,
+	mpjd::JD<double,half> jd{vals, rows, cols, params.dim,
 	  mpjd::sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, params};
 			
 	jd.solve();	

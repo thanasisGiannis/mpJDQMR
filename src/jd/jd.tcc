@@ -26,7 +26,7 @@ mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_,
       L = std::shared_ptr<std::vector<fp>>(new std::vector<fp>),
       R = std::shared_ptr<std::vector<fp>>(new std::vector<fp>),ldR,
       Qlocked,ldQlocked,Llocked,Rlocked,ldRlocked)))),
-    sqmr(std::move(std::unique_ptr<ScaledSQMR<fp,sfp>>(new ScaledSQMR<fp,sfp>(
+    sqmr(std::move(std::unique_ptr<BlockScaledSQMR<fp,sfp>>(new BlockScaledSQMR<fp,sfp>(
       mat, Q , ldQ,L, R, ldR, Qlocked, ldQlocked, la)))),										
     eigTarget(params.eigTarget) {}
 

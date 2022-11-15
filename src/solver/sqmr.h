@@ -40,7 +40,7 @@ class ScaledSQMR : public SQMR<fp> {
 	        LinearAlgebra &la_);
 	  virtual std::vector<fp> solve(int &iters);
 
-  private:
+  protected:
     int solve_eq();
 
 	  std::vector<sfp> sQ;       int ldsQ;       // Ritz vectors
@@ -61,7 +61,24 @@ class ScaledSQMR : public SQMR<fp> {
     std::vector<sfp> QTd; // of dimension (1 x numEvals)
 };
 
+template<class fp, class sfp>
+class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
+  public:
+    BlockScaledSQMR() = delete;
+    BlockScaledSQMR(Matrix<fp> &mat_, std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
+	        std::shared_ptr<std::vector<fp>> L_, 
+	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
+	        LinearAlgebra &la_);
+    virtual std::vector<fp> solve(int &iters) override;
+  private:
+     int solve_eq(); 
+};
 }
 
+
+
+
 #include "sqmr.tcc"
+#include "blockSqmr.tcc"
 

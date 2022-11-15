@@ -67,9 +67,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_,
 
 template<class fp, class sfp>
 std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
-  /* TODO: Implement sQMR Algorithm Steps in Scaled Matrix */
-
-
+  
   /* Casting input matrices into the inner loop precision */ 
   auto to_sfp = [](const fp d){return static_cast<sfp>(d);};
   auto to_fp  = [](const sfp d){return static_cast<fp>(d);};
