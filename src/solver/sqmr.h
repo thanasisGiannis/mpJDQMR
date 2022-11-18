@@ -1,4 +1,3 @@
-//TODO: replace references to smart pointers
 #pragma once
 
 #include <memory>
@@ -72,7 +71,48 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
 	        LinearAlgebra &la_);
     virtual std::vector<fp> solve(int &iters) override;
   private:
-     int solve_eq(); 
+    int solve_eq(); 
+    void orth_v3_update_vita(); 
+    
+    /* sQMR step */ 
+    std::vector<sfp> p0; int ldp0; // dim x nrhs
+    std::vector<sfp> p1; int ldp1; // dim x nrhs
+    std::vector<sfp> p2; int ldp2; // dim x nrhs
+
+    /* lanczos step */
+    std::vector<sfp> v1; int ldv1; // dim x nrhs
+    std::vector<sfp> v2; int ldv2; // dim x nrhs
+    std::vector<sfp> v3; int ldv3; // dim x nrhs
+
+    std::vector<sfp> alpha; int ldalpha; // nrhs x nrhs
+    std::vector<sfp> vita;  int ldvita;  // nrhs x nrhs 
+    std::vector<sfp> vita2; int ldvita2; // nrhs x nrhs 
+
+    /* sQMR matrix */
+    std::vector<sfp> b0; int ldb0; // nrhs x nrhs
+    std::vector<sfp> d0; int ldd0; // nrhs x nrhs
+
+    std::vector<sfp> a1; int lda1; // nrhs x nrhs
+    std::vector<sfp> b1; int ldb1; // nrhs x nrhs
+    std::vector<sfp> c1; int ldc1; // nrhs x nrhs
+    std::vector<sfp> d1; int ldd1; // nrhs x nrhs
+
+    /* lanczos matrix */
+    std::vector<sfp> ita;    int ldita;   // nrhs x nrhs
+    std::vector<sfp> thita;  int ldthita; // nrhs x nrhs 
+    std::vector<sfp> zita;   int ldzita;  // nrhs x nrhs 
+    std::vector<sfp> zita_;  int ldzita_; // nrhs x nrhs 
+
+    /* updating solution sQMR*/
+    std::vector<sfp> tau_;  int ldtau_; // nrhs x nrhs 
+    std::vector<sfp> tau;   int ldtau;  // nrhs x nrhs 
+
+    /* helping vector for Givens Rotations */
+    std::vector<sfp> z;  int ldz; // 2nrhs x nrhs 
+    
+    /* supportive data */
+    int ldx;
+    LinearAlgebra &la;
 };
 }
 

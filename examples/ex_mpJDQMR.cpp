@@ -81,10 +81,10 @@ int main() {
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
   mpjd::mpjdParam params;
-  params.numEvals = 5;
+  params.numEvals = 3;
   params.maxIters = 3*dim;
   params.dim = dim;
-  params.tol = 1e-08;
+  params.tol = 1e-02;
   params.printStats     = true;
   params.printIterStats = true;
 
@@ -98,7 +98,6 @@ int main() {
 	double *R_ = R->data();
 	double  rho{};
 		
-  std::cout << L->size() << std::endl;
 	for(auto j=0;j<params.numEvals;j++){
 	  
 	  rho = la.nrm2(params.dim,&R_[0+j*ldR],1);
