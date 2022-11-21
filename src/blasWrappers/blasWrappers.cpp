@@ -6,7 +6,10 @@
 #include <mkl.h>
 #include <omp.h>
 
+#define UNUSED(expr) static_cast<void>(expr)
+
 #pragma omp declare reduction(+: half_float::half : omp_out += omp_in)
+
 
 mpjd::LinearAlgebra::LinearAlgebra()
 {
@@ -17,8 +20,13 @@ mpjd::LinearAlgebra::LinearAlgebra()
 void mpjd::LinearAlgebra::eig(const int n, double* a, const int  lda,  double *l, 
     const int numEvals, eigenTarget_t target) {
 
+  UNUSED(numEvals);
+  UNUSED(target);
+  
 	//l should contains eigenvalues in descending order
 	LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', n, a, lda, l );
+
+
 }
 
 void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
@@ -211,7 +219,7 @@ void mpjd::LinearAlgebra::gemmAB(const int M, const int N, const int K,
           
           for (int k = 0; k < K; k += blockK) {
             /* prefetch A */
-            int sA    = std::min(M-i, blockM);
+            //int sA    = std::min(M-i, blockM);
             int kkEnd = std::min(blockK, K-k);
             int iiEnd = std::min(blockM, M-i);
             
@@ -295,7 +303,7 @@ half_float::half mpjd::LinearAlgebra::dot(const int dim,
   half_float::half res=static_cast<half_float::half>(0.0);
   #pragma omp simd reduction(+:res)
   for (int i = 0; i < dim; i++) {
-    res += x[i]*y[i];
+    res += x[i*incx]*y[i*incy];
   }
 
   return res;
@@ -308,7 +316,7 @@ void mpjd::LinearAlgebra::axpy(const int dim, const half_float::half alpha,
   //y = y + alpha * x
   #pragma omp simd
   for(int i=0;i<dim;i++){
-      y[i] += alpha*x[i];
+      y[i*incy] += alpha*x[i*incx];
   }
 }
 
@@ -324,7 +332,7 @@ void mpjd::LinearAlgebra::scal(const int dim, const half_float::half alpha,
 
   //#pragma omp parallel for
   for (int i = 0; i < dim; i++) {
-      x[i] *= alpha;
+      x[i*incx] *= alpha;
   }
 }
 
