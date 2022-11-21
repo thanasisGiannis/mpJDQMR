@@ -33,9 +33,10 @@ void mpjd::ScaledMatrix<fp, sfp>::matVec_COO(
   int *cols = this->m_vec_COL_INDEX.data();
 
   std::fill(tmp.begin(), tmp.end(), static_cast<sfp>(0.0));
-
+  
+  int vec_size = m_vec_sVALS.size();
   for( auto k = 0; k < dimBlock; k++ ) {
-    for( auto i = 0; i < m_vec_sVALS.size(); i++ ) {
+    for( auto i = 0; i < vec_size; i++ ) {
 	    yy[rows[i] + k*ldy] += vals[i]*xx[cols[i]+k*ldx];
     }
   }

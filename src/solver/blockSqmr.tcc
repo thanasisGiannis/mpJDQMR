@@ -1,3 +1,4 @@
+#define UNUSED(expr) static_cast<void>(expr)
 
 template<class fp,class sfp>
 mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_, 
@@ -190,56 +191,56 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   
   
 
-  auto nrhs = this->L->size();
-  auto dim  = this->mat->Dim();
+  auto nrhs = static_cast<int>(this->L->size());
+  auto dim  = static_cast<int>(this->mat->Dim());
   
   /*
     initiliazing all needed vectors to proper values
   */
   auto& sR = this->sR;
   auto& x  = this->x;
-  memset(x.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)x.data(), 0, dim*nrhs*sizeof(sfp));
 
   /* sQMR step */ 
-  memset(p0.data(), 0, dim*nrhs*sizeof(sfp));
-  memset(p1.data(), 0, dim*nrhs*sizeof(sfp));
-  memset(p2.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)p0.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)p1.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)p2.data(), 0, dim*nrhs*sizeof(sfp));
   
   /* lanczos step */
-  memset(v1.data(), 0, dim*nrhs*sizeof(sfp));
-  memset(v2.data(), 0, dim*nrhs*sizeof(sfp));
-  memset(v3.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)v1.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)v2.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)v3.data(), 0, dim*nrhs*sizeof(sfp));
 
   
-  memset(alpha.data(), 0, alpha.capacity()*sizeof(sfp));
-  memset(vita.data(),  0, vita.capacity()*sizeof(sfp));
-  memset(vita2.data(), 0, vita2.capacity()*sizeof(sfp));
+  memset((void*)alpha.data(), 0, alpha.capacity()*sizeof(sfp));
+  memset((void*)vita.data(),  0, vita.capacity()*sizeof(sfp));
+  memset((void*)vita2.data(), 0, vita2.capacity()*sizeof(sfp));
 
 
   /* sQMR matrix */
-  memset(b0.data(), 0, b0.capacity()*sizeof(sfp));
-  memset(d0.data(), 0, d0.capacity()*sizeof(sfp));
+  memset((void*)b0.data(), 0, b0.capacity()*sizeof(sfp));
+  memset((void*)d0.data(), 0, d0.capacity()*sizeof(sfp));
 
-  memset(a1.data(), 0, a1.capacity()*sizeof(sfp));
-  memset(b1.data(), 0, b1.capacity()*sizeof(sfp));
-  memset(c1.data(), 0, c1.capacity()*sizeof(sfp));
-  memset(d1.data(), 0, d1.capacity()*sizeof(sfp));
+  memset((void*)a1.data(), 0, a1.capacity()*sizeof(sfp));
+  memset((void*)b1.data(), 0, b1.capacity()*sizeof(sfp));
+  memset((void*)c1.data(), 0, c1.capacity()*sizeof(sfp));
+  memset((void*)d1.data(), 0, d1.capacity()*sizeof(sfp));
 
 
   /* lanczos matrix */
-  memset(ita.data(),   0, ita.capacity()*sizeof(sfp));
-  memset(thita.data(), 0, thita.capacity()*sizeof(sfp));
-  memset(zita.data(),  0, zita.capacity()*sizeof(sfp));
-  memset(zita_.data(), 0, zita_.capacity()*sizeof(sfp));
+  memset((void*)ita.data(),   0, ita.capacity()*sizeof(sfp));
+  memset((void*)thita.data(), 0, thita.capacity()*sizeof(sfp));
+  memset((void*)zita.data(),  0, zita.capacity()*sizeof(sfp));
+  memset((void*)zita_.data(), 0, zita_.capacity()*sizeof(sfp));
 
 
   /* updating solution sQMR*/
-  memset(tau_.data(), 0, tau_.capacity()*sizeof(sfp));
-  memset(tau.data(),  0, tau.capacity()*sizeof(sfp));
+  memset((void*)tau_.data(), 0, tau_.capacity()*sizeof(sfp));
+  memset((void*)tau.data(),  0, tau.capacity()*sizeof(sfp));
 
 
   /* helping vector for Givens Rotations */
-  memset(z.data(),  0, z.capacity()*sizeof(sfp));
+  memset((void*)z.data(),  0, z.capacity()*sizeof(sfp));
 
   /* matrices set to be equal to identity */
   // d0 = I;
@@ -330,7 +331,9 @@ std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
   auto& R        = this->R; auto ldR = this->ldR;
   auto& XX       = this->XX;
   
-
+  
+  UNUSED(R);
+  UNUSED(ldsQ);
   /* Casting input matrices into the inner loop precision */ 
   auto to_sfp = [](const fp d){return static_cast<sfp>(d);};
   auto to_fp  = [](const sfp d){return static_cast<fp>(d);};
@@ -350,8 +353,10 @@ std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
   
   XX.clear();
   sR.clear();   
+  
+  int numEvals = static_cast<int>(this->L->size());
   /* Call the actual solver */
-  for(auto i=0; i < this->L->size(); i++){
+  for(auto i=0; i < numEvals; i++){
   
     /* Change Matrix shift*/
     mat->update_matrix_shift(*(this->L->data()+i));

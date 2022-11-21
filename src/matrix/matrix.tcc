@@ -67,7 +67,8 @@ void mpjd::ScaledMatrix<fp, sfp>::init_vec_norms_COO() {
   fp *DA = m_cols_norms.data();
   fp *A  = this->m_vec_VALS.data();
 
-  for( auto k = 0; k < this->m_vec_COL_INDEX.size(); k++ ) {
+  int vec_size = static_cast<int>(this->m_vec_COL_INDEX.size());
+  for( auto k = 0; k < vec_size; k++ ) {
     auto j = this->m_vec_COL_INDEX.at(k);
     /* d = norm(A(:,j))*/
     /* DA(j) += d*d */

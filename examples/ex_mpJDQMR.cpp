@@ -94,7 +94,7 @@ int main() {
 			
 	jd.solve();	
 	
-	double *Q_ = Q->data();
+	//double *Q_ = Q->data();
 	double *R_ = R->data();
 	double  rho{};
 		

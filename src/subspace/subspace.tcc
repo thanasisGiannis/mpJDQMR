@@ -36,22 +36,22 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
     std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
     std::shared_ptr<std::vector<fp>> Llocked_,
     std::shared_ptr<std::vector<fp>> Rlocked_, int &ldRlocked_)
-    : la(la_),
-	    mat(mat_),
-	    dim(dim_),
-	    numEvals(numEvals_),
-	    eigTarget(eigTarget_),
-	    maxBasis(maxBasis_),
-	    blockSize(numEvals_),
-	    basisSize(0),
-	    lockedNumEvals(0),
-	    w{w_}, ldw(ldw_),
+    : w{w_}, ldw(ldw_),
 	    Q{Q_}, ldQ(ldQ_),
 	    L{L_},
 	    R{R_}, ldR(ldR_),
 	    Qlocked{Qlocked_}, ldQlocked(ldQlocked_),
 	    Llocked{Llocked_},
-	    Rlocked{Rlocked_}, ldRlocked(ldRlocked_) {
+	    Rlocked{Rlocked_}, ldRlocked(ldRlocked_),
+	    blockSize(numEvals_),
+	    maxBasis(maxBasis_),
+	    basisSize(0),
+	    numEvals(numEvals_),
+	    lockedNumEvals(0),
+	    dim(dim_),
+	    eigTarget(eigTarget_),
+	    mat(mat_),
+	    la(la_) {
 
   // subspace basis
 	V.reserve(dim*maxBasis*numEvals); ldV = dim; 
@@ -146,8 +146,9 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
   fp *QQ = static_cast<fp*>(Qlocked->data());
   // here a locking procedure should take place
   /* w = orth(Qlocked,w) */
+  int numEvalsLocked = static_cast<int>(Llocked->size());
 	for(int j=0; j < blockSize; j++){
-		for(int i=0; i < Llocked->size() ; i++){
+		for(int i=0; i < numEvalsLocked; i++){
 		    // alpha = Qlocked(i)'v
 				fp alpha {-la.dot(rows,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1)};
 				// v = v - Qlocked(i)*alpha
@@ -215,7 +216,7 @@ template<class fp>
 void mpjd::Subspace<fp>::Subspace_project_at_new_direction(){
 
   fp one       = static_cast<fp>( 1.0);
-  fp minus_one = static_cast<fp>(-1.0);
+  //fp minus_one = static_cast<fp>(-1.0);
   fp zero      = static_cast<fp>( 0.0);
   
 	mat.matVec(*w,ldw, Aw, ldAw, blockSize);     // Aw  = A*w
@@ -312,12 +313,12 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	// R = AV*q-Q*L
 	fp *AV_ = AV.data();
 	fp *q_  =  q.data();
-	fp *Q_  =  Q->data();
+	//fp *Q_  =  Q->data();
 	fp *L_  =  L->data();
 	fp *R_  =  R->data();
 	
 	fp one        = static_cast<fp>(1.0);
-	fp zero       = static_cast<fp>(0.0);
+	//fp zero       = static_cast<fp>(0.0);
 	fp minus_one  = static_cast<fp>(-1.0);
 	
 	*R = *Q;
@@ -338,7 +339,7 @@ bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
 
 
 	fp *R_ = R->data();
-	fp  rho{};
+	//fp  rho{};
   std::vector<fp> tmpR;
   std::vector<fp> tmpQ;
   std::vector<fp> tmpQprev;

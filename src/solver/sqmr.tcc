@@ -4,11 +4,11 @@ mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_,
     std::shared_ptr<std::vector<fp>> L_, 
     std::shared_ptr<std::vector<fp>> R_, int &ldR_,
     std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_)
-    : mat(mat_),
-      Q{Q_}, ldQ(ldQ_),
+    : Q{Q_}, ldQ(ldQ_),
       L{L_},
       R{R_}, ldR(ldR_),
-      Qlocked{Qlocked_}, ldQlocked(ldQlocked){}
+      Qlocked{Qlocked_}, ldQlocked(ldQlocked_),
+      mat(mat_){}
 	
 template<class fp>
 std::vector<fp> mpjd::SQMR<fp>::solve(int &iters){
@@ -87,7 +87,8 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
   auto iDR  = this->R;
   int ldiDR = this->ldR;
   /* Call the actual solver */
-  for(auto i=0; i < this->L->size(); i++){
+  int numEvals = static_cast<int>(this->L->size());
+  for(auto i=0; i < numEvals; i++){
   
     /* Change Matrix shift*/
     mat->update_matrix_shift(*(this->L->data()+i));
@@ -128,7 +129,7 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     auto dim = mat->Dim();
     auto numEvals = this->L->size();
     
-    int numLocked = sQlocked.size()/dim;
+    //int numLocked = sQlocked.size()/dim;
 
     // this should be input in this function
     sfp ita    = static_cast<sfp>(0.0);
@@ -202,7 +203,7 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     rho_ = la.dot(dim,r.data(),1,d.data(),1);
     
     auto iter = 0;
-    for(iter; iter < qmrMaxIt; iter++){
+    for(iter = 0; iter < qmrMaxIt; iter++){
         
         /* d = d - QQTd */
         la.gemm('T','N',numEvals,1,dim,one,
