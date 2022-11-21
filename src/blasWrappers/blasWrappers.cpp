@@ -330,7 +330,7 @@ half_float::half mpjd::LinearAlgebra::nrm2(const int dim,
 void mpjd::LinearAlgebra::scal(const int dim, const half_float::half alpha, 
     half_float::half *x, const int incx) {
 
-  //#pragma omp parallel for
+  #pragma omp parallel for
   for (int i = 0; i < dim; i++) {
       x[i*incx] *= alpha;
   }
