@@ -40,7 +40,20 @@ class LinearAlgebra {
 	  void scal(const int dim, const double alpha, 
 	      double *x, const int incx);
 
-
+    void geam(const char transa, const char transb,
+              int m, int n,
+              const double alpha, const double *A, int lda,
+              const double beta, const double *B, int ldb,
+              double *C, int ldc);
+    
+    void rotg(double *a, double *b, double *c, double *s);
+    void trsm(const char Layout, const char side,
+                               const char uplo, const char transa,
+                               const char diag, 
+                               const int dim, const int nrhs,
+                               const double alpha, 
+                               const double *A, const int ldA, 
+                               double *B , const double ldB);    
 
     /* FLOAT */
 	  void gemm(const char transa, const char  transb, 
@@ -55,7 +68,12 @@ class LinearAlgebra {
         float *y, const int incy);
 	  float nrm2(const int dim, const float *x, const int incx);
 	  void scal(const int dim, const float alpha, float *x, const int incx);
-	  
+	  void geam(const char transa, const char transb,
+              int m, int n,
+              const float alpha, const float *A, int lda,
+              const float beta, const float *B, int ldb,
+              float *C, int ldc);
+              
 	  /* HALF */
 	  void gemm(const char transa, const char  transb, 
 					  const int M, const int N, const int K,

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <mkl.h>
+#include <mkl_trans.h>
 #include <omp.h>
 
 #define UNUSED(expr) static_cast<void>(expr)
@@ -94,9 +95,120 @@ void mpjd::LinearAlgebra::scal(const int dim, const double alpha,
 	cblas_dscal(dim, alpha, x, incx);
 }
 
+void mpjd::LinearAlgebra::geam(const char transa, const char transb,
+              int m, int n,
+              const double alpha, const double *A, int lda,
+              const double beta, const double *B, int ldb,
+              double *C, int ldc) {
+	
+	MKL_INT mm = static_cast<MKL_INT>(m);
+	MKL_INT nn = static_cast<MKL_INT>(n);
+	
+	mkl_domatadd('c', transa, transb, mm, nn, alpha, A, lda, beta, B, ldb, C, ldc);
+              
+}
+
+void mpjd::LinearAlgebra::rotg(double *a, double *b, double *c, double *s) {
+  cblas_drotg(a,b,c,s);
+}
+
+
+void mpjd::LinearAlgebra::trsm(const char Layout, const char side,
+                               const char uplo, const char transa,
+                               const char diag, 
+                               const int dim, const int nrhs,
+                               const double alpha, 
+                               const double *A, const int ldA, 
+                               double *B , const double ldB ) {
+
+  CBLAS_LAYOUT cblas_Layout;
+  CBLAS_SIDE cblas_side;
+  CBLAS_UPLO cblas_uplo;
+  CBLAS_TRANSPOSE cblas_transa;
+  CBLAS_DIAG cblas_diag;
+
+	switch (Layout) {
+		case 'C':
+			cblas_Layout = CblasColMajor;
+			break;
+		case 'R':
+			cblas_Layout = CblasRowMajor;
+			break;
+		default:
+			exit(-1); // error
+	}
+
+
+	switch (side) {
+		case 'L':
+			cblas_side = CblasLeft;
+			break;
+		case 'R':
+			cblas_side = CblasRight;
+			break;
+		default:
+			exit(-1); // error
+	}
+
+
+	switch (uplo) {
+		case 'U':
+			cblas_uplo = CblasUpper;
+			break;
+		case 'L':
+			cblas_uplo = CblasLower;
+			break;
+		default:
+			exit(-1); // error
+	}
+
+	switch (transa) {
+		case 'N':
+			cblas_transa = CblasNoTrans;
+			break;
+		case 'T':
+			cblas_transa = CblasTrans;
+			break;
+		default:
+			exit(-1); // error
+	}
+
+	switch (diag) {
+		case 'N':
+			cblas_diag = CblasNonUnit;
+			break;
+		case 'U':
+			cblas_diag = CblasUnit;
+			break;
+		default:
+			exit(-1); // error
+	}
+
+  
+  MKL_INT mkl_dim  = static_cast<MKL_INT>(dim);
+  MKL_INT mkl_nrhs = static_cast<MKL_INT>(nrhs);
+  MKL_INT mkl_ldA  = static_cast<MKL_INT>(ldA);
+  MKL_INT mkl_ldB  = static_cast<MKL_INT>(ldB);
+  
+  cblas_dtrsm(cblas_Layout, cblas_side, cblas_uplo, cblas_transa, cblas_diag,
+              mkl_dim, mkl_nrhs, alpha, A, mkl_ldA, B, mkl_ldB);  
+
+} 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+/* FLOAT */
 void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
     const int m, const int n, const int k, 
     const float alpha, const float* a, const int lda,
@@ -161,6 +273,7 @@ void mpjd::LinearAlgebra::scal(const int dim, const float alpha,
 
 	cblas_sscal(dim, alpha, x, incx);
 }
+
 
 
 /* HALF */
