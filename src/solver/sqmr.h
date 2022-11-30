@@ -73,6 +73,12 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
   private:
     int solve_eq(); 
     void orth_v3_update_vita(); 
+    void householderQR(int m, int n, std::vector<sfp> &R, int ldR, 
+                       std::vector<sfp> &Q, int ldQ);
+    
+    
+    /* sparse matrix vector accumulator */
+    std::vector<sfp> y; int ldy; // dim x nrhs
     
     /* sQMR step */ 
     std::vector<sfp> p0; int ldp0; // dim x nrhs
@@ -105,11 +111,24 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
 
     /* updating solution sQMR*/
     std::vector<sfp> tau_;  int ldtau_; // nrhs x nrhs 
+    std::vector<sfp> tau_2;             // nrhs x nrhs
     std::vector<sfp> tau;   int ldtau;  // nrhs x nrhs 
 
-    /* helping vector for Givens Rotations */
-    std::vector<sfp> z;  int ldz; // 2nrhs x nrhs 
+    /* updating residual sR*/
+    std::vector<sfp> Ap0;  int ldAp0;   // dim x nrhs 
+    std::vector<sfp> Ap1;  int ldAp1;   // dim x nrhs 
     
+  
+    // ToDo: Create a Householder orthogonalization class
+    /* helping vector for Householder QR */
+    std::vector<sfp> hhR;  int ldhhR;        // 2nrhs x nrhs 
+    std::vector<sfp> hhQ;  int ldhhQ;        // 2nrhs x nrhs 
+    std::vector<sfp> hhQz; int ldhhQz;
+    std::vector<sfp> hhx;                    // 2nrhs x 1
+    std::vector<sfp> hhv;                    // 2nrhs x 1     
+    std::vector<sfp> hhu;                    //  nrhs x 1     
+    std::vector<sfp> hhvhhvt; int ldhhvhhvt; // 2nrhs x 2nrhs     
+
     /* supportive data */
     int ldx;
     LinearAlgebra &la;

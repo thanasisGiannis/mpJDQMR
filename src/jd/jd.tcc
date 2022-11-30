@@ -44,7 +44,7 @@ void mpjd::JD<fp,sfp>::printIterationStats(const int loopIter) {
       << "\%||R(" << loopIter << "," << j << ")||=" << rho/mat.Norm() 
       << std::endl;
   }
-  std::cout << "======================" << std::endl;
+  std::cout << "\% ======================" << std::endl;
 }
 
 

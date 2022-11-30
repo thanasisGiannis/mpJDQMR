@@ -48,11 +48,16 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
                 
           
 	  // VECTORS TO BE USED IN THE BLOCK SOLVER
+
+    /* matrix vector accumulator */
+    y.reserve(dim*nrhs); // rhs x rhs
+    y.insert(y.begin(), y.capacity(),static_cast<sfp>(0.0));
+    ldy = dim; 
+
     /* sQMR step */ 
     p0.reserve(dim*nrhs); // dim x rhs
     p0.insert(p0.begin(), p0.capacity(),static_cast<sfp>(0.0));
     ldp0 = dim; 
-    
     
     p1.reserve(dim*nrhs); // dim x rhs
     p1.insert(p1.begin(), p1.capacity(),static_cast<sfp>(0.0));
@@ -62,7 +67,16 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
     p2.insert(p2.begin(), p2.capacity(),static_cast<sfp>(0.0));
     ldp2 = dim; 
 
-
+    /* updating residual sR*/
+    Ap0.reserve(dim*nrhs); // dim x rhs
+    Ap0.insert(Ap0.begin(), Ap0.capacity(),static_cast<sfp>(0.0));
+    ldAp0 = dim; 
+    
+    Ap1.reserve(dim*nrhs); // dim x rhs
+    Ap1.insert(Ap1.begin(), Ap1.capacity(),static_cast<sfp>(0.0));
+    ldAp1 = dim; 
+    
+    
     /* lanczos step */
     v1.reserve(dim*nrhs); // dim x rhs
     v1.insert(v1.begin(), v1.capacity(),static_cast<sfp>(0.0));
@@ -141,7 +155,9 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
 
     /* updating solution sQMR*/
     tau_.reserve(nrhs*nrhs); // rhs x rhs
+    tau_2.reserve(nrhs*nrhs); // rhs x rhs
     tau_.insert(tau_.begin(), tau_.capacity(),static_cast<sfp>(0.0));
+    tau_2.insert(tau_2.begin(), tau_2.capacity(),static_cast<sfp>(0.0));
     ldtau_ = nrhs; 
 
     tau.reserve(nrhs*nrhs); // rhs x rhs
@@ -149,11 +165,33 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
     ldtau = nrhs; 
 
 
-    /* helping vector for Givens Rotations */
-    z.reserve(nrhs*nrhs); // rhs x rhs
-    z.insert(z.begin(), z.capacity(),static_cast<sfp>(0.0));
-    ldz = nrhs; 
+    /* helping vectors for Givens Rotations */
+    hhR.reserve(2*nrhs*nrhs); // 2*rhs x rhs
+    hhR.insert(hhR.begin(), hhR.capacity(),static_cast<sfp>(0.0));
+    ldhhR = 2*nrhs; 
 
+    hhQ.reserve(2*nrhs*2*nrhs); // 2*rhs x 2*rhs
+    hhQ.insert(hhQ.begin(), hhQ.capacity(),static_cast<sfp>(0.0));
+    ldhhQ = 2*nrhs;
+    
+    hhQz.reserve(2*nrhs*2*nrhs); // 2*rhs x 2*rhs
+    hhQz.insert(hhQz.begin(), hhQz.capacity(),static_cast<sfp>(0.0));
+    ldhhQz = 2*nrhs;
+     
+
+    hhx.reserve(2*nrhs*1); // 2*rhs x 1
+    hhx.insert(hhx.begin(), hhx.capacity(),static_cast<sfp>(0.0));
+
+    hhv.reserve(2*nrhs*1); // 2*rhs x 1
+    hhv.insert(hhv.begin(), hhv.capacity(),static_cast<sfp>(0.0));
+
+  
+    hhu.reserve(nrhs*1);   // rhs x 1
+    hhu.insert(hhu.begin(), hhu.capacity(),static_cast<sfp>(0.0));
+
+    hhvhhvt.reserve(2*nrhs*2*nrhs);   // 2rhs x 2rhs
+    hhvhhvt.insert(hhvhhvt.begin(), hhvhhvt.capacity(),static_cast<sfp>(0.0));
+    ldhhvhhvt = 2*nrhs;
     
     // THIS MAYBE WILL NOT BE USED
     // we zero their capacity
@@ -178,33 +216,47 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
 };
 
 
+
 template<class fp,class sfp>
 int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   /*
-    This will be the function that implements the 
+    This is the function that implements the 
     Block sQMR method.
 
     should inherit data vectors from parent class
     which are already initialized at the solve() function
-  */
-#if 1  
+  */  
   
   
+  auto sR_original = this->sR;
+  
+  sfp one       = static_cast<sfp>(1.0);
+  sfp minus_one = static_cast<sfp>(-1.0);
+  sfp zero      = static_cast<sfp>(0.0);
 
+  auto mat  = this->mat;
   auto nrhs = static_cast<int>(this->L->size());
   auto dim  = static_cast<int>(this->mat->Dim());
   
   /*
     initiliazing all needed vectors to proper values
   */
-  auto& sR = this->sR;
+  auto& sR = this->sR; auto ldsR = this->ldsR;
   auto& x  = this->x;
   memset((void*)x.data(), 0, dim*nrhs*sizeof(sfp));
+
+  /* matvec accumulator */ 
+  memset((void*)y.data(), 0, dim*nrhs*sizeof(sfp));
 
   /* sQMR step */ 
   memset((void*)p0.data(), 0, dim*nrhs*sizeof(sfp));
   memset((void*)p1.data(), 0, dim*nrhs*sizeof(sfp));
   memset((void*)p2.data(), 0, dim*nrhs*sizeof(sfp));
+
+  /* updating residual sR*/
+  memset((void*)Ap0.data(), 0, dim*nrhs*sizeof(sfp));
+  memset((void*)Ap1.data(), 0, dim*nrhs*sizeof(sfp));
+  
   
   /* lanczos step */
   memset((void*)v1.data(), 0, dim*nrhs*sizeof(sfp));
@@ -238,9 +290,12 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   memset((void*)tau_.data(), 0, tau_.capacity()*sizeof(sfp));
   memset((void*)tau.data(),  0, tau.capacity()*sizeof(sfp));
 
-
-  /* helping vector for Givens Rotations */
-  memset((void*)z.data(),  0, z.capacity()*sizeof(sfp));
+  
+  /* helping vector for Householder QR 
+    WILL BE INITIATED IN THE householderQR()
+  */
+  memset((void*)hhR.data(),  0, hhR.capacity()*sizeof(sfp));
+  memset((void*)hhQ.data(),  0, hhQ.capacity()*sizeof(sfp));
 
   /* matrices set to be equal to identity */
   // d0 = I;
@@ -259,37 +314,324 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   }
   
 
-
-
-
   //v3 = b;%-A*x;
   v3 = sR;
-  //[v3,vita] = qr(v3,0);
+
+  //[v3,vita2] = qr(v3,0);
   orth_v3_update_vita();
-
-  //tau2_ = vita;
   
-
-
-
+  v2 = v3;
+  vita = vita2;
+  tau_ = vita;
   
-  for(auto i=0; i<nrhs; i++){
-    for(auto j=0; j<nrhs; j++){
-      std::cout << "vita(" << i+1 << "," << j+1 << ") = " << vita[i+j*lda1] << std::endl;
+  // CHECKED AREA
+
+  // main loop of the block algorithm
+  int loopNum;
+  for(loopNum=0; loopNum<100; loopNum++) {
+    // v3 = A*v2-v1*vita;
+    
+    // v3 = -v1*vita;
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+      minus_one, v1.data(), ldv1, vita.data(), ldvita,
+      zero, v3.data(), ldv3);
+
+        
+    // y = A*v2;    
+    mat->matVec(v2, ldv2, y, ldy, nrhs);  
+
+    // v3 = y+v3;
+    la.geam('N', 'N',dim, nrhs,
+              one, y.data(), ldy, one, v3.data(),ldv3,
+              v3.data(), ldv3);
+    
+
+    //alpha = v2'*v3;
+    la.gemm('T', 'N', nrhs, nrhs, dim, 
+      one, v2.data(), ldv2, v3.data(), ldv3,
+      zero, alpha.data(), ldalpha);
+
+
+    //v3 = v3 - v2*alpha;
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+      minus_one, v2.data(), ldv2, alpha.data(), ldalpha,
+      one, v3.data(), ldv3);
+
+
+
+
+    //[v3,vita2] = qr(v3,0);
+    orth_v3_update_vita();
+
+
+
+
+    //thita = b0*vita;
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, b0.data(), ldb0, vita.data(), ldvita,
+      zero, thita.data(), ldthita);
+        
+    //ita = a1*d0*vita+b1*alpha;
+    //tau_2 = a1*d0 // use of tau_2 is for tmp    
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, a1.data(), lda1, d0.data(), ldd0,
+      zero, tau_2.data(), ldita);
+
+    //ita = tau_2*vita
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, tau_2.data(), ldita, vita.data(), ldvita,
+      zero, ita.data(), ldita);
+
+    //ita = ita+b1*alpha
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, b1.data(), ldb1, alpha.data(), ldalpha,
+      one, ita.data(), ldita);
+      
+
+    //zita_ = c1*d0*vita+d1*alpha;
+    //tau_2 = c1*d0
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, c1.data(), ldc1, d0.data(), ldd0,
+      zero, tau_2.data(), ldzita_);
+    
+    //zita_ = tau_2*vita
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, tau_2.data(), ldzita_, vita.data(), ldvita,
+      zero, zita_.data(), ldzita_);
+    
+    //zita_ = zita_ + d1*alpha
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, d1.data(), ldd1, alpha.data(), ldalpha,
+      one, zita_.data(), ldzita_);
+
+    // hhR = [zita_; vita2]
+    for(int i=0; i<nrhs; i++){
+      for(int j=0; j<nrhs; j++){
+        hhR[i + j*ldhhR]      = zita_[i+j*ldzita_];
+        hhR[i+nrhs + j*ldhhR] = vita2[i+j*ldvita2];
+      }
+    } 
+    
+    // [hhQ,hhR] = qr([zita_; vita2];  
+    householderQR(2*nrhs, nrhs, hhR, ldhhR, hhQ, ldhhQ);  
+
+
+    // update 
+    b0 = b1;
+    d0 = d1;
+
+
+
+    // TODO: Find a faster way to do the following data movements
+    // a1 = qq(1:rhs,1:rhs)';
+    for(int i=0; i<nrhs; i++){
+      for(int j=0; j<nrhs; j++){
+        a1[i+j*lda1] = hhQ[j + i*ldhhQ];
+      }
     }
-  }
 
-  
+    // b1 = qq(rhs+1:2*rhs,1:rhs)';
+    for(int i=0; i<nrhs; i++){
+      for(int j=0; j<nrhs; j++){
+        b1[i+j*ldb1] = hhQ[ (j+nrhs) + i*ldhhQ];
+      }
+    }
+
+    // c1 = qq(1:rhs,rhs+1:2*rhs)';
+    for(int i=0; i<nrhs; i++){
+      for(int j=0; j<nrhs; j++){
+        c1[i+j*ldc1] = hhQ[j + (i+nrhs)*ldhhQ];
+      }
+    }
+
+    // d1 = qq(rhs+1:2*rhs,rhs+1:2*rhs)';
+    for(int i=0; i<nrhs; i++){
+      for(int j=0; j<nrhs; j++){
+        d1[i+j*ldd1] = hhQ[(j+nrhs) + (i+nrhs)*ldhhQ];
+      }
+    }
+
+    // zita = rr(1:rhs,1:rhs);
+    for(int i=0; i<nrhs; i++){
+      for(int j=0; j<nrhs; j++){
+        zita[i+j*ldzita] = hhR[i + j*ldhhR];
+      }
+    }
+    
+    //p2 = (v2-p1*ita-p0*thita)/zita;
+      
+    // p2 = v2
+    p2 = v2;
+    // p2 = -p1*ita + p2
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+        minus_one, p1.data(), ldp1, ita.data(), ldita,
+        one, p2.data(), ldp2);
+    
+    // p2 = -p0*thita + p2
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+        minus_one, p0.data(), ldp0, thita.data(), ldthita,
+        one, p2.data(), ldp2);
+        
+    // p2 = p2/zita  
+    la.trsm('C', 'R', 'U', 'N', 'N', dim, nrhs, one, zita.data(), ldzita,
+            p2.data(), ldp2);
    
-#endif
+    // tau = a1*tau_;
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, a1.data(), lda1, tau_.data(), ldtau_,
+      zero, tau.data(), ldtau);
+    
+
+    // x = x+p2*tau;
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+      one, p2.data(), ldp2, tau.data(), ldtau,
+      one, x.data(), ldx);
+
+    /*
+      TODO:
+
+      y =  A*v2 
+      Ap2 = y = (y-Ap1*ita-Ap0*thita)/zita;
+      sR = sR-Ap2*tau;
+    */   
+    
+      
+    // y = -Ap1*ita + y;
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+      minus_one, Ap1.data(), ldAp1, ita.data(), ldita,
+      one, y.data(), ldy);
+    
+    // y = -Ap0*thita + y;
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+      minus_one, Ap0.data(), ldAp0, thita.data(), ldthita,
+      one, y.data(), ldy);
+    
+    // y = y/zita;
+    la.trsm('C', 'R', 'U', 'N', 'N', dim, nrhs, one, zita.data(), ldzita,
+            y.data(), ldy);
+   
+    // sR = sR - y*tau;
+    la.gemm('N', 'N', dim, nrhs, nrhs, 
+      minus_one, y.data(), ldy, tau.data(), ldtau,
+      one, sR.data(), ldsR);
+    
+    /*
+      if(norm(sR)<tol)
+        break;
+      end
+
+    */ 
+     
+    int nConv = 0;
+    for(int i=0; i<nrhs; i++) {
+      sfp nrm2 = la.nrm2(dim, sR.data() + 0+i*ldsR, 1); 
+      
+      //std::cout << std::scientific << "\%||linearR(:," << i << ")= " << nrm2 << ";" << std::endl;
+      if (nrm2 < 1e-01) {
+        nConv++;
+      }
+    }
+
+    if(nConv == nrhs) {
+      break;
+    }
+    
+    
+    
+    
+    // tau_ = c1*tau_;
+    tau_2  = tau_;
+    la.gemm('N', 'N', nrhs, nrhs, nrhs, 
+      one, c1.data(), ldc1, tau_2.data(), ldtau_,
+      zero, tau_.data(), ldtau_);
+
+        
+    // update for new loop
+    v1 = v2;
+    v2 = v3;
+    
+    p0 = p1;
+    p1 = p2;
+    
+    Ap0 = Ap1;
+    Ap1 = y;
+    
+    vita = vita2;    
+  } // end of main loop
+  
 
 
   //auto& x  = this->x;
   //auto& sR = this->sR;
 
-  x = sR;
-  return 0;
+  x = sR_original;
+  return loopNum;
 
+}
+
+template<class fp,class sfp>
+void mpjd::BlockScaledSQMR<fp,sfp>::
+householderQR(int m, int n, std::vector<sfp> &R, int ldR, 
+              std::vector<sfp> &Q, int ldQ) {
+
+  
+  if(m<n) exit(-1); // tall and thin only
+  
+  // Q = I
+  memset((void*)Q.data(),0,Q.capacity()*sizeof(sfp)); 
+  for(int i=0; i<m; i++){
+    Q[i+i*ldQ] = static_cast<sfp>(1.0);
+  }
+  std::vector<sfp> Qprev;
+  
+  for(int k=0; k<n; k++) {
+    // x = zeros(m,1); 
+    memset((void*)hhx.data(), 0, hhx.capacity()*sizeof(sfp));    
+
+    // x(k:m,1)=R(k:m,k);
+    memcpy(hhx.data()+k, R.data() + k+k*ldR, sizeof(sfp)*(m-k)); 
+
+    //g=norm(x);
+    sfp g = la.nrm2(m, hhx.data(), 1);
+    
+    // v=x; v(k)=x(k)+g;
+    hhv = hhx;
+    hhv[k] = hhx[k] + g;
+  
+    // s=norm(v);
+    sfp s = la.nrm2(m,hhv.data(),1);  
+    
+    // if s!=0
+    // v = v/s
+    la.scal(m, static_cast<sfp>(1.0)/s,hhv.data(),1);
+    
+    // u=R'*v;
+    la.gemm('T', 'N',
+      n, 1, m, static_cast<sfp>(1.0), R.data(), ldR,
+      hhv.data(), m, static_cast<sfp>(0.0), hhu.data(), n);
+
+
+    // R=R-2*v*u'; 
+    la.gemm('N', 'T',
+      m, n, 1, static_cast<sfp>(-2.0), hhv.data(), m,
+      hhu.data(), n, static_cast<sfp>(1.0), R.data(), ldR);
+
+
+    // Q=Q-2*Q*(v*v');
+    hhQz = Q;
+    //hhvhhvt = v*v';
+    la.gemm('N', 'T',
+      m, m, 1, static_cast<sfp>(1.0), hhv.data(), m,
+      hhv.data(), m, static_cast<sfp>(0.0), hhvhhvt.data(), ldhhvhhvt);      
+
+ 
+    // Q = Q-2*Q*hhvhhvt
+    la.gemm('N', 'N', m, m, m, 
+    static_cast<sfp>(-2.0), hhQz.data(), ldhhQz, hhvhhvt.data(), ldhhvhhvt,
+    static_cast<sfp>(1.0), Q.data(), ldQ);
+    
+  }
+  
 }
 
 template<class fp, class sfp>
@@ -301,19 +643,24 @@ void mpjd::BlockScaledSQMR<fp,sfp>::orth_v3_update_vita(){
   int rows = this->mat->Dim();
   int cols = this->L->size();
 
-  /* V = orth(V) */
-  for(int j=0; j < cols; j++){
-	  for(int i=0; i < j ; i++){
-	      // alpha = V(i)'v
-			  vita[i+j*ldvita] = -la.dot(rows,&VV[0+i*ldV],1,&VV[0+j*ldV],1);
-			  // v = v - V(i)*alpha
-			  la.axpy(rows,vita[j+i*ldvita],&VV[0+i*ldV],1,&VV[0+j*ldV],1); 
-	  }	
-	  // v = v/norm(v)
-	  vita[j+j*ldvita] = la.nrm2(rows,&VV[0+j*ldV],1);
-  }
-
-  
+  /* v3 = orth(v3) */
+  for(int k=0; k<1; k++){
+	  for(int j=0; j < cols; j++){
+	    sfp* v_j = &VV[0+j*ldV];
+		  for(int i=0; i < j ; i++){
+		      sfp* v_i = &VV[0+i*ldV];
+		      // alpha = V(i)'v
+				  auto alpha {la.dot(rows,v_i,1,v_j,1)};
+          vita2[i + j*ldvita2] = alpha;
+				  // v = v - V(i)*alpha
+				  la.axpy(rows, -alpha,v_i,1,v_j,1); 
+		  }	
+		  // v = v/norm(v)
+		  auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
+		  vita2[j + j*ldvita2] = alpha;
+		  la.scal(rows,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    
+	  }
+	}
 }
 
     
@@ -375,7 +722,7 @@ std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
 
     // cast to solver precision 
     sR.resize(sR.size() + mat->Dim());
-    std::transform(rb + (0+i*ldrb),rb + (0+(i+1)*ldrb), sR.data() + ldR*i,to_sfp);
+    std::transform(rb + (0+i*ldrb), rb + (0+(i+1)*ldrb), sR.data() + ldR*i,to_sfp);
   }
   // at this point right hand side vectors are 
   // up to date with the diagonal scal
@@ -385,8 +732,10 @@ std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
   /* Casting output vectors into the outer loop precision */  
   XX.resize(x.size());
   std::transform(x.begin(),x.end(), XX.begin(),to_fp);
+
   // DR = D\R
   mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L->size()); 
+
 
   return XX;
 }
