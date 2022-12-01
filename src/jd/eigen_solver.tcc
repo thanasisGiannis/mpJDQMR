@@ -2,7 +2,8 @@
 #include <math.h>
 
 template<class fp, class sfp>
-void mpjd::JD<fp, sfp>::solve() {
+std::tuple<std::vector<fp>,std::vector<fp>,std::vector<fp>> 
+  mpjd::JD<fp, sfp>::solve() {
 
   basis->Subspace_init_direction();           // w = rand()
   basis->Subspace_orth_direction();           // w = orth(w)
@@ -11,15 +12,15 @@ void mpjd::JD<fp, sfp>::solve() {
   basis->Subspace_projected_mat_eig();        // [q,L] = eig(T); Q = V*q;
 
   int innerIters=0; // for statistics usage
-    
-  for( auto iter = 0; iter < maxIters; iter++ ) {
+  auto iter = 0;
+  for( iter = 0; iter < maxIters; iter++ ) {
     
     basis->Subspace_eig_residual();             // R = AV*q-Q*L
 
     if( parameters.printIterStats )             // this has to be right after
       printIterationStats(iter);                // the residual vector calculation
       
-    if( basis->Check_Convergence(tol) ) {
+    if( basis->Check_Convergence_and_lock(tol, iter == maxIters-1 ) ){
       break;
     }
     
@@ -45,6 +46,10 @@ void mpjd::JD<fp, sfp>::solve() {
   if( parameters.printStats ){
 	  printStats();
   }
+  
+  return std::tuple<std::vector<fp>,
+                    std::vector<fp>,
+                    std::vector<fp>>(*Qlocked,*Llocked,*Rlocked);
 }
 
 
