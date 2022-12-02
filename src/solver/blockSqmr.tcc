@@ -228,8 +228,6 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   */  
   
   
-  auto sR_original = this->sR;
-  
   sfp one       = static_cast<sfp>(1.0);
   sfp minus_one = static_cast<sfp>(-1.0);
   sfp zero      = static_cast<sfp>(0.0);
@@ -237,6 +235,11 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   auto mat  = this->mat;
   auto nrhs = static_cast<int>(this->L->size());
   auto dim  = static_cast<int>(this->mat->Dim());
+
+  auto sR_original = this->sR;
+  auto sQlocked    = this->sQlocked; auto ldsQlocked = this->ldsQlocked;
+  auto numLocked   = sQlocked.size()/dim;
+  
   
   /*
     initiliazing all needed vectors to proper values
@@ -316,7 +319,17 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
   //v3 = b;%-A*x;
   v3 = sR;
+  // alpha is used as tmp
+  // alpha = Qlocked'*v3
+  la.gemm('T', 'N', numLocked, nrhs, dim, 
+    one, sQlocked.data(), ldsQlocked, v3.data(), ldv3,
+    zero, alpha.data(), ldalpha);
 
+  // v3 = v3 - Qlocked*alpha
+  la.gemm('N', 'N', dim, nrhs, numLocked, 
+    minus_one, sQlocked.data(), ldsQlocked, alpha.data(), ldalpha,
+    one, v3.data(), ldv3);
+    
   //[v3,vita2] = qr(v3,0);
   orth_v3_update_vita();
   
@@ -344,8 +357,20 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     la.geam('N', 'N',dim, nrhs,
               one, y.data(), ldy, one, v3.data(),ldv3,
               v3.data(), ldv3);
+              
+    // v3 = v3-Qlocked*Qlocked'*v3;
+    // alpha is used as tmp
+    // alpha = Qlocked'*v3
+    la.gemm('T', 'N', numLocked, nrhs, dim, 
+      one, sQlocked.data(), ldsQlocked, v3.data(), ldv3,
+      zero, alpha.data(), ldalpha);
+ 
+    // v3 = v3 - Qlocked*alpha
+    la.gemm('N', 'N', dim, nrhs, numLocked, 
+      minus_one, sQlocked.data(), ldsQlocked, alpha.data(), ldalpha,
+      one, v3.data(), ldv3);
+ 
     
-
     //alpha = v2'*v3;
     la.gemm('T', 'N', nrhs, nrhs, dim, 
       one, v2.data(), ldv2, v3.data(), ldv3,

@@ -147,26 +147,30 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
   // here a locking procedure should take place
   /* w = orth(Qlocked,w) */
   int numEvalsLocked = static_cast<int>(Llocked->size());
-	for(int j=0; j < blockSize; j++){
-		for(int i=0; i < numEvalsLocked; i++){
-		    // alpha = Qlocked(i)'v
-				fp alpha {-la.dot(rows,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1)};
-				// v = v - Qlocked(i)*alpha
-				la.axpy(rows,alpha,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1); 
-		}	
-	}
-	
+	for(int k=0; k<3; k++){
+	  for(int j=0; j < blockSize; j++){
+		  for(int i=0; i < numEvalsLocked; i++){
+		      // alpha = Qlocked(i)'v
+				  fp alpha {-la.dot(rows,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1)};
+				  // v = v - Qlocked(i)*alpha
+				  la.axpy(rows,alpha,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1); 
+		  }	
+	  }
+  }
+  
+  	
   VV = static_cast<fp*>(V.data());
   /* w = orth(V,w) */
-	for(int j=0; j < blockSize; j++){
-		for(int i=0; i < cols ; i++){
-		    // alpha = V(i)'w
-				fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldw],1)};
-				// v = v - V(i)*alpha
-				la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldw],1); 
-		}	
-	}
-  
+	for(int k=0; k<3; k++){
+	  for(int j=0; j < blockSize; j++){
+		  for(int i=0; i < cols ; i++){
+		      // alpha = V(i)'w
+				  fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldw],1)};
+				  // v = v - V(i)*alpha
+				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldw],1); 
+		  }	
+	  }
+  }
   
   
   /* w = orth(w) */
@@ -357,6 +361,7 @@ bool mpjd::Subspace<fp>::Check_Convergence_and_lock(const fp eigenTol, bool lock
 	for(auto c=0; c<blockSize; c++){
 		rhos.push_back(la.nrm2(dim,&R_[0+c*ldR],1)); // calculate all residuals
 		if(rhos[c] < tol*mat.Norm()){
+		  std::cout << rhos[c] << " " << tol << " " << mat.Norm() << std::endl;
 		  convPairsNum++;
 		}
   }  
@@ -397,16 +402,16 @@ bool mpjd::Subspace<fp>::Check_Convergence_and_lock(const fp eigenTol, bool lock
   }
   
 	lockedNumEvals += convPairsNum; 
-  //numEvals       -= convPairsNum;	
   blockSize      -= convPairsNum;
   
-  lockedNumEvals = std::min(lockedNumEvals,numEvals);
-  blockSize = std::max(0,blockSize);
+  //lockedNumEvals = std::min(lockedNumEvals,numEvals);
+  //blockSize = std::max(0,blockSize);
   
 	
 	
   if(blockSize <= 0) {
     blockSize = numEvals;
+    basisSize = 1;
     
     Q->resize(dim*blockSize);
 	  Qprev.resize(dim*blockSize);
@@ -416,14 +421,33 @@ bool mpjd::Subspace<fp>::Check_Convergence_and_lock(const fp eigenTol, bool lock
     w->clear();
     *w = *Qlocked;
 	  V.clear();
-	  basisSize = 0;
 	  
+	   for(int i=0; i<numEvals; i++){
+      std::cout << std::scientific << "L(" << i+1 << ") = " << *(Llocked->data()+i) << std::endl;
+    }
+    
+	  Qprev.clear();
 	  Qlocked->clear();
 	  Llocked->clear();
 	  Rlocked->clear();
 	  
     Subspace_orth_direction();           // w = orth(w)
+    
     Subspace_project_at_new_direction(); // T= w'*A*w // 
+    
+   
+    
+    int nrhs = numEvals;
+    std::cout << "T = zeros(" << nrhs << "," << nrhs <<")" << std::endl;
+    for(int i=0; i<nrhs; i++){
+      for(int j=0; j<nrhs; j++){
+        std::cout << std::scientific
+                  << "T("<< i+1 <<"," << j+1 << ")= " << *(T.data() + i+j*ldT) << ";" << std::endl;      
+      }
+    }
+    exit(0);
+    
+    
     Subspace_update_basis();             // V = [ V w]
     Subspace_projected_mat_eig();        // [q,L] = eig(T); Q = V*q;
     Subspace_eig_residual();             // R = AV*q-Q*L
@@ -436,13 +460,14 @@ bool mpjd::Subspace<fp>::Check_Convergence_and_lock(const fp eigenTol, bool lock
     *Llocked = *L;
     *Rlocked = *R;
     
+    /*
     std::cout << Rlocked << std::endl;
     for(int j=0;j<numEvals;j++){
 	    double rho = 0.0;
       rho = la.nrm2(dim,Rlocked->data()+(0+j*ldRlocked),1);
 	    std::cout << "/ rho("<<j<<") = " << rho << std::endl;
 	  }
-	
+	  */
     return true;
   }
   

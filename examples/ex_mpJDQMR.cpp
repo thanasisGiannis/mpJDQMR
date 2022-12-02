@@ -78,14 +78,14 @@ int main() {
 	
 	mpjd::LinearAlgebra la;
 	
-//	readSymMtx<double>("../matrices/bfwb62.mtx",rows,cols,vals,dim,norm);
-	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
+	readSymMtx<double>("../matrices/bfwb62.mtx",rows,cols,vals,dim,norm);
+//	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
   mpjd::mpjdParam params;
   params.numEvals = 3;
   params.maxIters = 3*dim;
   params.dim = dim;
-  params.tol = 1e-3;
+  params.tol = 1e-8;
   params.printStats     = false;
   params.printIterStats = true;
 
@@ -104,7 +104,7 @@ int main() {
 	std::cout << norm << std::endl;
   for(int j=0;j<params.numEvals;j++){
 	  double rho{la.nrm2(dim,R.data()+(0+j*ldR),1)};
-	  std::cout << "ritz("<<j<<") = " << *(L.data() + j) << " / rho("<<j<<") = " << rho << std::endl;
+	  std::cout << "ritz("<<j<<") = " << *(L.data() + j) << " / rho("<<j<<") = " << rho/norm << std::endl;
 	}
 	
 }
