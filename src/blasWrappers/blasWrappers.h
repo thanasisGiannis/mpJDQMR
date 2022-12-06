@@ -73,7 +73,15 @@ class LinearAlgebra {
               const float alpha, const float *A, int lda,
               const float beta, const float *B, int ldb,
               float *C, int ldc);
-              
+    void rotg(float *a, float *b, float *c, float *s);
+    void trsm(const char Layout, const char side,
+                               const char uplo, const char transa,
+                               const char diag, 
+                               const int dim, const int nrhs,
+                               const float alpha, 
+                               const float *A, const int ldA, 
+                               float *B , const float ldB); 
+                                         
 	  /* HALF */
 	  void gemm(const char transa, const char  transb, 
 					  const int M, const int N, const int K,
