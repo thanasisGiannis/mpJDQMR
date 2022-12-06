@@ -192,6 +192,18 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     
     /* r = -b */
     r = b;
+    // alpha is used as tmp
+    // QTd = Qlocked'*r
+    auto numLocked = sQlocked.size()/dim;
+    la.gemm('T', 'N', numLocked, 1, dim, 
+      one, sQlocked.data(), ldsQlocked, r.data(), dim,
+      zero, QTd.data(), ldQTd);
+
+    // r = r - Qlocked*QTd
+    la.gemm('N', 'N', dim, 1, numLocked, 
+      minus_one, sQlocked.data(), ldsQlocked, QTd.data(), ldQTd,
+      one, r.data(), dim);
+      
     la.scal(dim,minus_one,r.data(),1);
     
     d = r;
@@ -205,6 +217,16 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
     auto iter = 0;
     for(iter = 0; iter < qmrMaxIt; iter++){
         
+        la.gemm('T', 'N', numLocked, 1, dim, 
+          one, sQlocked.data(), ldsQlocked, d.data(), dim,
+          zero, QTd.data(), ldQTd);
+
+        // d = d - Qlocked*QTd
+        la.gemm('N', 'N', dim, 1, numLocked, 
+          minus_one, sQlocked.data(), ldsQlocked, QTd.data(), ldQTd,
+          one, d.data(), dim);
+        
+        
         /* d = d - QQTd */
         la.gemm('T','N',numEvals,1,dim,one,
             sQ.data(),ldsQ,d.data(),dim,
@@ -216,7 +238,17 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
 
         /* w = A*d*/                              
         mat->matVec(d,dim,w,dim,1);                                                     
-        
+
+        la.gemm('T', 'N', numLocked, 1, dim, 
+          one, sQlocked.data(), ldsQlocked, w.data(), dim,
+          zero, QTd.data(), ldQTd);
+
+        // d = d - Qlocked*QTd
+        la.gemm('N', 'N', dim, 1, numLocked, 
+          minus_one, sQlocked.data(), ldsQlocked, QTd.data(), ldQTd,
+          one, w.data(), dim);
+
+       
         /* w = w-VVTw */
         la.gemm('T','N',numEvals,1,dim,one,
             sQ.data(), ldsQ,w.data(),dim,
