@@ -1,3 +1,13 @@
+/*
+ * TODO: use optimal stopping criteria
+ * TODO: make copies faster
+ * TODO: remove vector copy as updates - maybe use some pointer arithmetic
+ * TODO: faster initialization of the vectors 
+ *
+ */  
+
+
+
 #define UNUSED(expr) static_cast<void>(expr)
 
 template<class fp,class sfp>
@@ -225,6 +235,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
     should inherit data vectors from parent class
     which are already initialized at the solve() function
+    
   */  
   
   
@@ -341,14 +352,12 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   vita = vita2;
   tau_ = vita;
   
-  // CHECKED AREA
-
+  
   // main loop of the block algorithm
   int loopNum;
-  sfp nrm2_prev = 1.0;
-  sfp nrm2      = 1.0;
-  
-  for(loopNum=0; loopNum<3*dim; loopNum++) {
+  sfp nrm2      = static_cast<sfp>(1.0);
+  int maxloopNum = 3*dim;
+  for(loopNum=0; loopNum<maxloopNum; loopNum++) {
     // v3 = A*v2-v1*vita;
     
     // v3 = -v1*vita;
@@ -378,6 +387,8 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
       minus_one, sQlocked.data(), ldsQlocked, alpha.data(), ldalpha,
       one, v3.data(), ldv3);
  
+   
+    
     //alpha = v2'*v3;
     la.gemm('T', 'N', nrhs, nrhs, dim, 
       one, v2.data(), ldv2, v3.data(), ldv3,
@@ -393,8 +404,6 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
     //[v3,vita2] = qr(v3,0);
     orth_v3_update_vita();
-
-
 
 
     //thita = b0*vita;
@@ -508,69 +517,13 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     la.gemm('N', 'N', dim, nrhs, nrhs, 
         minus_one, p0.data(), ldp0, thita.data(), ldthita,
         one, p2.data(), ldp2);
-        
+
+
     // p2 = p2/zita  
     la.trsm('C', 'R', 'U', 'N', 'N', dim, nrhs, one, zita.data(), ldzita,
             p2.data(), ldp2);
    
-/*
-    if( loopNum == 4 ){
-    
-      std::cout << "v2 = zeros("<< dim <<","<< nrhs << ");" << std::endl;
-      for(int i=0; i<dim; i++){
-        for(int j=0; j<nrhs; j++){
-          std::cout << "v2(" << i+1 << "," << j+1 << ")= " << v2[i+j*ldv2] << ";" << std::endl;
-        }
-      }
-      
-      std::cout << "p0 = zeros("<< dim <<","<< nrhs << ");" << std::endl;
-      for(int i=0; i<dim; i++){
-        for(int j=0; j<nrhs; j++){
-          std::cout << "p0(" << i+1 << "," << j+1 << ")= " << p0[i+j*ldp0] << ";" << std::endl;
-        }
-      }
-      
-      std::cout << "p1 = zeros("<< dim <<","<< nrhs << ");" << std::endl;
-      for(int i=0; i<dim; i++){
-        for(int j=0; j<nrhs; j++){
-          std::cout << "p1(" << i+1 << "," << j+1 << ")= " << p1[i+j*ldp1] << ";" << std::endl;
-        }
-      }
 
-      std::cout << "p2 = zeros("<< dim <<","<< nrhs << ");" << std::endl;
-      for(int i=0; i<dim; i++){
-        for(int j=0; j<nrhs; j++){
-          std::cout << "p2(" << i+1 << "," << j+1 << ")= " << p2[i+j*ldp2] << ";" << std::endl;
-        }
-      }
-      
-      std::cout << "ita = zeros("<< nrhs <<","<< nrhs << ");" << std::endl;
-      for(int i=0; i<nrhs; i++){
-        for(int j=0; j<nrhs; j++){
-          std::cout << "ita(" << i+1 << "," << j+1 << ")= " << ita[i+j*ldita] << ";" << std::endl;
-        }
-      }
-      
-      std::cout << "thita = zeros("<< nrhs <<","<< nrhs << ");" << std::endl;
-      for(int i=0; i<nrhs; i++){
-        for(int j=0; j<nrhs; j++){
-          std::cout << "thita(" << i+1 << "," << j+1 << ")= " << thita[i+j*ldthita] << ";" << std::endl;
-        }
-      }
-      
-      std::cout << "zita = zeros("<< nrhs <<","<< nrhs << ");" << std::endl;
-      for(int i=0; i<nrhs; i++){
-        for(int j=0; j<nrhs; j++){
-          std::cout << "zita(" << i+1 << "," << j+1 << ")= " << zita[i+j*ldzita] << ";" << std::endl;
-        }
-      }
-    
-      exit(-1);      
-    }
-
-
-
-*/
     // tau = a1*tau_;
     la.gemm('N', 'N', nrhs, nrhs, nrhs, 
       one, a1.data(), lda1, tau_.data(), ldtau_,
@@ -582,14 +535,6 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
       one, p2.data(), ldp2, tau.data(), ldtau,
       one, x.data(), ldx);
 
-    /*
-      TODO:
-
-      y =  A*v2 
-      Ap2 = y = (y-Ap1*ita-Ap0*thita)/zita;
-      sR = sR-Ap2*tau;
-    */   
-
     // y = -Ap1*ita + y;
     la.gemm('N', 'N', dim, nrhs, nrhs, 
       minus_one, Ap1.data(), ldAp1, ita.data(), ldita,
@@ -599,16 +544,18 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     la.gemm('N', 'N', dim, nrhs, nrhs, 
       minus_one, Ap0.data(), ldAp0, thita.data(), ldthita,
       one, y.data(), ldy);
-    
+
+
     // y = y/zita;
     la.trsm('C', 'R', 'U', 'N', 'N', dim, nrhs, one, zita.data(), ldzita,
             y.data(), ldy);
-    
+
+
     // sR = sR - y*tau;
     la.gemm('N', 'N', dim, nrhs, nrhs, 
       minus_one, y.data(), ldy, tau.data(), ldtau,
       one, sR.data(), ldsR);
-    
+
 
     /*
       if(norm(sR)<tol)
@@ -617,18 +564,18 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
     */ 
      
+    // MAYBE THIS LOOP SHOULD BE IN A FUNCTION
     int nConv = 0;
     for(int i=0; i<nrhs; i++) {
       
       nrm2 = la.nrm2(dim, sR.data() + 0+i*ldsR, 1); 
-      
-      //std::cout << std::scientific << "\%||linearR("<<loopNum <<"," << i << ")= " << nrm2 << ";" << std::endl;
-      //if (nrm2 < 1e-02 || std::abs(nrm2-nrm2_prev)/std::abs(nrm2)<1e-02 ) {
-      if (nrm2 < 1e-01 ) {
+      //std::cout << i+1 << " "<<  nrm2 << std::endl;
+      // TODO:  at this point we need to implement stopping criteria
+      //        based on optimal convergence of jacobi davidson 
+      if (nrm2 < 1e-01) {
         nConv++;
       }
     }
-    nrm2_prev = nrm2;
     
     if(nConv == nrhs) {
       break;
@@ -755,7 +702,7 @@ void mpjd::BlockScaledSQMR<fp,sfp>::orth_v3_update_vita(){
 		  // v = v/norm(v)
 		  auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
 		  vita2[j + j*ldvita2] = alpha;
-		  la.scal(rows,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    
+		  la.scal(rows,static_cast<sfp>(1.0/alpha),&VV[0+j*ldV],1);    
 	  }
 	}
 }

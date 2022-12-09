@@ -46,14 +46,13 @@ class LinearAlgebra {
               const double beta, const double *B, int ldb,
               double *C, int ldc);
     
-    void rotg(double *a, double *b, double *c, double *s);
     void trsm(const char Layout, const char side,
                                const char uplo, const char transa,
                                const char diag, 
                                const int dim, const int nrhs,
                                const double alpha, 
                                const double *A, const int ldA, 
-                               double *B , const double ldB);    
+                               double *B , const int ldB);    
 
     /* FLOAT */
 	  void gemm(const char transa, const char  transb, 
@@ -73,14 +72,13 @@ class LinearAlgebra {
               const float alpha, const float *A, int lda,
               const float beta, const float *B, int ldb,
               float *C, int ldc);
-    void rotg(float *a, float *b, float *c, float *s);
     void trsm(const char Layout, const char side,
                                const char uplo, const char transa,
                                const char diag, 
                                const int dim, const int nrhs,
                                const float alpha, 
                                const float *A, const int ldA, 
-                               float *B , const float ldB); 
+                               float *B , const int ldB); 
                                          
 	  /* HALF */
 	  void gemm(const char transa, const char  transb, 
@@ -99,6 +97,20 @@ class LinearAlgebra {
 	      const half_float::half *x, const int incx);
 	  void scal(const int dim, const half_float::half alpha, 
 	      half_float::half *x, const int incx);
+	  void geam(const char transa, const char transb,
+              int m, int n,
+              const half_float::half alpha,
+              const half_float::half *A, int lda,
+              const half_float::half beta, 
+              const half_float::half *B, int ldb,
+              half_float::half *C, int ldc);
+    void trsm(const char Layout, const char side,
+                               const char uplo, const char transa,
+                               const char diag, 
+                               const int M, const int N,
+                               const half_float::half alpha, 
+                               const half_float::half *A, const int ldA, 
+                               half_float::half *B , const int ldB); 
 
   private:
 	  void gemmAB(const int M, const int N, const int K,
@@ -110,6 +122,10 @@ class LinearAlgebra {
 				        const half_float::half alpha, const half_float::half* A, const int ldA,
 				        const half_float::half* B, const int ldB,
 				        const half_float::half beta, half_float::half* C, const int ldC);
+		void gemmABT(const int M, const int N, const int K,
+                const half_float::half alpha, const half_float::half* A, const int ldA,
+                const half_float::half* B, const int ldB,
+                const half_float::half beta, half_float::half* C,int ldC);
 };
 }
 //void dot();

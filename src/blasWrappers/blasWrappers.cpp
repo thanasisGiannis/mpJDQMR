@@ -108,10 +108,6 @@ void mpjd::LinearAlgebra::geam(const char transa, const char transb,
               
 }
 
-void mpjd::LinearAlgebra::rotg(double *a, double *b, double *c, double *s) {
-  cblas_drotg(a,b,c,s);
-}
-
 
 void mpjd::LinearAlgebra::trsm(const char Layout, const char side,
                                const char uplo, const char transa,
@@ -119,7 +115,7 @@ void mpjd::LinearAlgebra::trsm(const char Layout, const char side,
                                const int dim, const int nrhs,
                                const double alpha, 
                                const double *A, const int ldA, 
-                               double *B , const double ldB ) {
+                               double *B , const int ldB ) {
 
   CBLAS_LAYOUT cblas_Layout;
   CBLAS_SIDE cblas_side;
@@ -287,9 +283,6 @@ void mpjd::LinearAlgebra::geam(const char transa, const char transb,
               
 }
 
-void mpjd::LinearAlgebra::rotg(float *a, float *b, float *c, float *s) {
-  cblas_srotg(a,b,c,s);
-}
 
 
 void mpjd::LinearAlgebra::trsm(const char Layout, const char side,
@@ -298,7 +291,7 @@ void mpjd::LinearAlgebra::trsm(const char Layout, const char side,
                                const int dim, const int nrhs,
                                const float alpha, 
                                const float *A, const int ldA, 
-                               float *B , const float ldB ) {
+                               float *B , const int ldB ) {
 
   CBLAS_LAYOUT cblas_Layout;
   CBLAS_SIDE cblas_side;
@@ -384,107 +377,63 @@ void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
     const half_float::half* B, const int  ldB,
     const half_float::half beta, half_float::half* C, int ldC) {
   
-  if (transb == 'T') {
-      std::cout << "ERROR GEMM" << std::endl;
-      exit(0);
-  }
 
-  switch (transa)
-  {
-    case 'N':
-      gemmAB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
-      break;
-    case 'T':
-      gemmATB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
-      break;
-    default:
-      exit(0);
-  }
+  if( transa == 'N' && transb == 'N' ) {
+    gemmAB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+  } else if( transa == 'N' && transb == 'T') {
+    gemmABT(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+  } else if( transa == 'T' && transb == 'N' ) {
+    gemmATB(M, N, K, alpha, A, ldA, B, ldB, beta, C, ldC);
+  } else {
+    std::cout << "ERROR GEMM" << std::endl;
+    exit(0);
+ }
+ 
 }
 
+void mpjd::LinearAlgebra::gemmABT(const int M, const int N, const int K,
+    const half_float::half alpha, const half_float::half* A, const int ldA,
+    const half_float::half* B, const int ldB,
+    const half_float::half beta, half_float::half* C,int ldC) {
+// TODO: Find a better performance wise 
+//       implementation of this mat-mat
+
+  #pragma omp parallel for collapse(2) if(M>1 && N>1)
+  for(int i=0; i<M; i++){
+    for(int j=0; j<N; j++){
+    
+     half_float::half c = static_cast<half_float::half>(0.0);
+      for(int k=0; k<K; k++){
+         c += A[i+k*ldA]*B[j+k*ldB];     
+      }
+      C[i+j*ldC] = beta*C[i+j*ldC] + alpha*c;
+      
+    }
+  }
+}
 
 void mpjd::LinearAlgebra::gemmAB(const int M, const int N, const int K,
     const half_float::half alpha, const half_float::half* A, const int ldA,
     const half_float::half* B, const int ldB,
     const half_float::half beta, half_float::half* C,int ldC) {
 
-  if(M==1 && N ==1){
-    C[0] = dot(K, A,1, B, 1);
-    return;
+
+// TODO: Find a better performance wise 
+//       implementation of this mat-mat
+
+ #pragma omp parallel for collapse(2) if(M>1 && N>1)
+ for(int i=0; i<M; i++){
+    for(int j=0; j<N; j++){
+      half_float::half c = static_cast<half_float::half>(0.0);
+      for(int k=0; k<K; k++){
+         c += A[i+k*ldA]*B[k+j*ldB];     
+      }
+      C[i+j*ldC] = beta*C[i+j*ldC] + alpha*c;
+    }
   }
 
-  int blockM = std::min(M,2048);
-  int blockN = std::min(N,16);
-  int blockK = std::min(K,16);
 
-  #pragma omp parallel if(blockM>1 || blockN>1)
-  {
-    half_float::half miniC[blockM*blockN];
-    half_float::half miniA[blockM*blockK];
-    half_float::half miniB[blockK*blockN];
-    
-    #pragma omp for collapse(2) //if(blockM>1 && blockN>1)
-    for (int i = 0; i < M; i += blockM) {
-      for (int j = 0; j < N; j += blockN) {
-      
-          /* initialize miniC */
-          memset(miniC, 0, sizeof(half_float::half)*blockM*blockN);
-          
-          
-          for (int k = 0; k < K; k += blockK) {
-            /* prefetch A */
-            //int sA    = std::min(M-i, blockM);
-            int kkEnd = std::min(blockK, K-k);
-            int iiEnd = std::min(blockM, M-i);
-            
-            for (int ii = 0; ii < iiEnd; ii++) {
-              #pragma omp simd
-              for (int kk = 0; kk < kkEnd; kk++){
-                miniA[kk + ii*blockK ] = A[(i+ii)+(k+kk)*ldA];
-              }
-            }
-            
-            /* prefetch B */
-            int sB    = std::min(K-k, blockK);
-            int jjEnd = std::min(blockN, N-j);
-
-            #pragma omp simd
-            for (int jj = 0; jj < jjEnd; jj++) {
-                memcpy(&miniB[0 + jj*blockM], &B[k+(j+jj)*ldB],
-                    sB*sizeof(half_float::half));
-            }
-            
-            #pragma omp parallel for collapse(2) if(blockM>1 || blockN>1)
-            for (int ii = 0; ii < blockM; ii++) {
-              for (int jj = 0; jj < blockN; jj++) {
-                half_float::half cc = static_cast<half_float::half>(0.0);
-                #pragma omp simd reduction (+:cc)
-                for (int kk = 0; kk < blockK; kk++) {
-                       cc += alpha*miniA[ii*blockK+kk]*miniB[kk+jj*blockK];
-                  }
-                miniC[ii+jj*blockM] = cc;  
-              }
-            }
-          }// for (int k = 0; k < K; k += blockK) 
-          
-          
-          /* store miniC to C */
-          for (int jj = 0; (jj < blockN) & (j+jj < N); jj++) {
-            auto iiEnd = std::min(blockM,M-i);
-            #pragma omp simd
-            for (int ii = 0; ii < iiEnd; ii++) {
-                C[i+ii+(j+jj)*ldC] = beta*C[i+ii + (j+jj)*ldC];
-            }
-            #pragma omp simd
-            for (int ii = 0; ii < iiEnd; ii++) {
-                C[i+ii+(j+jj)*ldC] += miniC[ii+jj*blockM];
-            }
-          }
-      } // for (int j = 0; j < N; j += blockN)
-    } // for (int i = 0; i < M; i += blockM)
-  } //  #pragma omp parallel if(blockM>1 || blockN>1)        
-}
-						
+}						
 void mpjd::LinearAlgebra::gemmATB(const int M, const int N, const int K,
     const half_float::half alpha, const half_float::half* A, const int ldA,
     const half_float::half* B, const int ldB,
@@ -550,6 +499,87 @@ void mpjd::LinearAlgebra::scal(const int dim, const half_float::half alpha,
   }
 }
 
+
+void mpjd::LinearAlgebra::geam(const char transa, const char transb,
+          int m, int n,
+          const half_float::half  alpha, const half_float::half *A, int lda,
+          const half_float::half  beta, const half_float::half *B, int ldb,
+          half_float::half *C, int ldc) {
+
+  if( transa == 'N' && transb == 'N') {
+  
+    #pragma omp parallel for collapse(2)
+    for (int i=0; i<m; i++) {
+      for (int j=0; j<n; j++) {
+          C[i+j*ldc] = alpha*A[i+j*lda] + beta*B[i+j*ldb];
+      }
+    }
+  } else if(transa == 'T' && transb == 'N' ) {
+
+    #pragma omp parallel for collapse(2)
+    for (int i=0; i<m; i++) {
+      for (int j=0; j<n; j++) {
+          C[i+j*ldc] = alpha*A[j+i*lda] + beta*B[i+j*ldb];
+      }
+    }
+  
+  } else if (transa == 'N' && transb == 'T' ) {
+
+    #pragma omp parallel for collapse(2)
+    for (int i=0; i<m; i++) {
+      for (int j=0; j<n; j++) {
+          C[i+j*ldc] = alpha*A[i+j*lda] + beta*B[j+i*ldb];
+      }
+    }
+  } else if (transa == 'T' && transb == 'T' ) {
+
+    #pragma omp parallel for collapse(2)
+    for (int i=0; i<m; i++) {
+      for (int j=0; j<n; j++) {
+          C[i+j*ldc] = alpha*A[j+i*lda] + beta*B[j+i*ldb];
+      }
+    }
+  } else {
+    exit(-1);
+  }
+  
+              
+}
+
+
+
+void mpjd::LinearAlgebra::trsm(const char Layout, const char side,
+                           const char uplo, const char transa,
+                           const char diag, 
+                           const int M, const int N,
+                           const half_float::half alpha, 
+                           const half_float::half *A, const int ldA, 
+                           half_float::half *B , const int ldB ) {
+
+  if(Layout == 'C' &&
+     side   == 'R' &&
+     uplo   == 'U' &&
+     transa == 'N' &&
+     diag   == 'N') {
+     // WE ACTUALLY USE THIS SETTING INSIDE TH
+     // BLOCK SQMR - IF ANYTHING CHANGES IN THE
+     // FUTURE- MORE SHOULD BE IMPLEMENTED
+     // A = N x N
+     // B = M x N
+      
+    for( int i=0; i<N; i++ ) {
+      for( int j=i-1; j>=0; j-- ) {
+        // b(:,i) = b(:,i) - A(j,i).*b(:,j);
+        axpy(M, -A[j+i*ldA], &B[0+j*ldB], 1,&B[0+i*ldB], 1);
+      }
+      //b(:,i) = b(:,i)./A(i,i);
+      scal(M, alpha/A[i+i*ldA], &B[0+i*ldB], 1);
+    }        
+  } else {
+    exit(-1);
+  } 
+
+} 
 
 
 
