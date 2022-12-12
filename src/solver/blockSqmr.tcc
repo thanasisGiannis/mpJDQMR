@@ -19,7 +19,8 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
 	        LinearAlgebra &la_) 
 	        : ScaledSQMR<fp,sfp>(mat_, Q_, ldQ_, L_, R_, ldR_, 
 	                             Qlocked_, ldQlocked_, la_)
-	        ,la(la_){
+	        ,la(la_)
+	        ,hQR(Householder( 2*L_->size(), L_->size(), la_ ))  {
 	        
 	        
     auto nrhs = this->L->size();
@@ -174,35 +175,16 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
     tau.insert(tau.begin(), tau.capacity(),static_cast<sfp>(0.0));
     ldtau = nrhs; 
 
-
     /* helping vectors for Givens Rotations */
-    hhR.reserve(2*nrhs*nrhs); // 2*rhs x rhs
+    hhR.reserve(2*nrhs*nrhs); // 2nrhs x rhs
     hhR.insert(hhR.begin(), hhR.capacity(),static_cast<sfp>(0.0));
     ldhhR = 2*nrhs; 
 
-    hhQ.reserve(2*nrhs*2*nrhs); // 2*rhs x 2*rhs
+    hhQ.reserve(2*nrhs*2*nrhs); // 2nrhs x 2nrhs
     hhQ.insert(hhQ.begin(), hhQ.capacity(),static_cast<sfp>(0.0));
     ldhhQ = 2*nrhs;
-    
-    hhQz.reserve(2*nrhs*2*nrhs); // 2*rhs x 2*rhs
-    hhQz.insert(hhQz.begin(), hhQz.capacity(),static_cast<sfp>(0.0));
-    ldhhQz = 2*nrhs;
-     
 
-    hhx.reserve(2*nrhs*1); // 2*rhs x 1
-    hhx.insert(hhx.begin(), hhx.capacity(),static_cast<sfp>(0.0));
 
-    hhv.reserve(2*nrhs*1); // 2*rhs x 1
-    hhv.insert(hhv.begin(), hhv.capacity(),static_cast<sfp>(0.0));
-
-  
-    hhu.reserve(nrhs*1);   // rhs x 1
-    hhu.insert(hhu.begin(), hhu.capacity(),static_cast<sfp>(0.0));
-
-    hhvhhvt.reserve(2*nrhs*2*nrhs);   // 2rhs x 2rhs
-    hhvhhvt.insert(hhvhhvt.begin(), hhvhhvt.capacity(),static_cast<sfp>(0.0));
-    ldhhvhhvt = 2*nrhs;
-    
     // THIS MAYBE WILL NOT BE USED
     // we zero their capacity
     // for memory optimization
@@ -459,7 +441,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     } 
     
     // [hhQ,hhR] = qr([zita_; vita2];  
-    householderQR(2*nrhs, nrhs, hhR, ldhhR, hhQ, ldhhQ);  
+    hQR.orth(2*nrhs, nrhs, hhR, ldhhR, hhQ, ldhhQ);  
 
 
     // update 
@@ -613,9 +595,36 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
 }
 
+
+template<class fp,class sfp>
+mpjd::BlockScaledSQMR<fp,sfp>::
+Householder::Householder(int dim, int nrhs, LinearAlgebra &la_)
+  : la(la_)
+{
+    
+    hhQz.reserve(dim*dim); // dim x dim
+    hhQz.insert(hhQz.begin(), hhQz.capacity(),static_cast<sfp>(0.0));
+    ldhhQz = dim;
+
+    hhx.reserve(dim*1); // dim x 1
+    hhx.insert(hhx.begin(), hhx.capacity(),static_cast<sfp>(0.0));
+
+    hhv.reserve(dim*1); // dim x 1
+    hhv.insert(hhv.begin(), hhv.capacity(),static_cast<sfp>(0.0));
+
+    hhu.reserve(nrhs*1);   // dim x 1
+    hhu.insert(hhu.begin(), hhu.capacity(),static_cast<sfp>(0.0));
+
+    hhvhhvt.reserve(dim*dim);   // dim x dim
+    hhvhhvt.insert(hhvhhvt.begin(), hhvhhvt.capacity(),static_cast<sfp>(0.0));
+    ldhhvhhvt = dim;
+
+}
+
+
 template<class fp,class sfp>
 void mpjd::BlockScaledSQMR<fp,sfp>::
-householderQR(int m, int n, std::vector<sfp> &R, int ldR, 
+Householder::orth(int m, int n, std::vector<sfp> &R, int ldR, 
               std::vector<sfp> &Q, int ldQ) {
 
   
@@ -626,7 +635,7 @@ householderQR(int m, int n, std::vector<sfp> &R, int ldR,
   for(int i=0; i<m; i++){
     Q[i+i*ldQ] = static_cast<sfp>(1.0);
   }
-  std::vector<sfp> Qprev;
+  //std::vector<sfp> Qprev;
   
   for(int k=0; k<n; k++) {
     // x = zeros(m,1); 
