@@ -102,11 +102,7 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
     v3.insert(v3.begin(), v3.capacity(),static_cast<sfp>(0.0));
     ldv3 = dim; 
 
-/*
-    w.reserve(dim*nrhs); // dim x rhs
-    w.insert(w.begin(), w.capacity(),static_cast<sfp>(0.0));
-    ldw = dim; 
-*/
+
     alpha.reserve(nrhs*nrhs); // rhs x rhs
     alpha.insert(alpha.begin(), alpha.capacity(),static_cast<sfp>(0.0));
     ldalpha = nrhs; 
@@ -330,9 +326,9 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   //[v3,vita2] = qr(v3,0);
   orth_v3_update_vita();
   
-  v2 = v3;
-  vita = vita2;
-  tau_ = vita;
+  std::swap(v2, v3);
+  std::swap(vita, vita2);
+  std::swap(tau_, vita);
   
   
   // main loop of the block algorithm
@@ -445,9 +441,8 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
 
     // update 
-    b0 = b1;
-    d0 = d1;
-
+    std::swap(b0,b1);
+    std::swap(d0,d1);
 
 
     // TODO: Find a faster way to do the following data movements
@@ -565,32 +560,26 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     
     
     // tau_ = c1*tau_;
-    tau_2  = tau_;
+    std::swap(tau_2, tau_);
     la.gemm('N', 'N', nrhs, nrhs, nrhs, 
       one, c1.data(), ldc1, tau_2.data(), ldtau_,
       zero, tau_.data(), ldtau_);
 
         
     // update for new loop
-    v1 = v2;
-    v2 = v3;
-    
-    p0 = p1;
-    p1 = p2;
-    
-    Ap0 = Ap1;
-    Ap1 = y;
-    
-    vita = vita2;    
+    std::swap(v1,v2);
+    std::swap(v2,v3);
+
+    std::swap(p0,p1);
+    std::swap(p1,p2);
+
+    std::swap(Ap0,Ap1);
+    std::swap(Ap1,y);
+
+    std::swap(vita,vita2);
+        
   } // end of main loop
   
-
-
-  //auto& x  = this->x;
-  //auto& sR = this->sR;
-
-  //x = sR_original;
-  //exit(-1);
   return loopNum;
 
 }

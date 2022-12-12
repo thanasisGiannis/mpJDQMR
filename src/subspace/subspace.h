@@ -1,4 +1,3 @@
-//TODO: Update references to smart pointers
 #pragma once
 
 #include "../matrix/matrix.h"

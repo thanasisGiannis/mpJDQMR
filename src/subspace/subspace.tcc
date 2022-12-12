@@ -7,6 +7,8 @@
 #include <vector>
 #include <iterator>
 
+#include <omp.h>
+
 #include "../blasWrappers/blasWrappers.h"
 
 template<class fp>
@@ -329,6 +331,7 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	
 	
 	// R = R*L = Q*L 
+	
 	for(auto j=0; j<numEvals; j++){
 		la.scal(dim, L_[j], &R_[0+j*ldR], 1);
 	}
@@ -400,7 +403,7 @@ bool mpjd::Subspace<fp>::Check_Convergence_and_lock(const fp eigenTol, bool lock
     basisSize = 0;
     lockedNumEvals = 0;
     
-    *w = *Qlocked;
+    std::swap(*w, *Qlocked);
     Qlocked->clear();
     Llocked->clear();
     Rlocked->clear();
@@ -418,9 +421,9 @@ bool mpjd::Subspace<fp>::Check_Convergence_and_lock(const fp eigenTol, bool lock
     Subspace_projected_mat_eig();        // [q,L] = eig(T); Q = V*q;
     Subspace_eig_residual();             // R = AV*q-Q*L
     
-    *Qlocked = *Q;
-    *Llocked = *L;
-    *Rlocked = *R;
+    std::swap(*Qlocked, *Q);
+    std::swap(*Llocked, *L);
+    std::swap(*Rlocked, *R);
     
     return true;
   }
