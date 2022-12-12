@@ -1,7 +1,6 @@
 /*
  * TODO: use optimal stopping criteria
  * TODO: make copies faster
- * TODO: remove vector copy as updates - maybe use some pointer arithmetic
  * TODO: faster initialization of the vectors 
  *
  */  
