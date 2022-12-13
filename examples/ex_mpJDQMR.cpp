@@ -78,16 +78,16 @@ int main() {
 	
 	mpjd::LinearAlgebra la;
 	
-	readSymMtx<double>("../matrices/bfwb62.mtx",rows,cols,vals,dim,norm);
-//	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
+//	readSymMtx<double>("../matrices/bfwb62.mtx",rows,cols,vals,dim,norm);
+	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
   mpjd::mpjdParam params;
   params.numEvals = 3;
-  params.maxIters = 3*dim;
+  params.maxIters = 30*dim;
   params.dim = dim;
   params.tol = 1e-8;
-  params.printStats     = false;
-  params.printIterStats = true;
+  params.printStats     = true;
+  params.printIterStats = false;
 
 
 	mpjd::JD<double,double> jd{vals, rows, cols, params.dim,
@@ -97,12 +97,11 @@ int main() {
 			
 	auto t = jd.solve();	
 	
-	std::vector<double> Q = std::get<0>(t); int ldQ = dim;
+	std::vector<double> Q = std::get<0>(t); //int ldQ = dim;
 	std::vector<double> L = std::get<1>(t);
 	std::vector<double> R = std::get<2>(t); int ldR = dim;
 	
-	std::cout << norm << std::endl;
-  for(int j=0;j<params.numEvals;j++){
+	for(int j=0;j<params.numEvals;j++){
 	  double rho{la.nrm2(dim,R.data()+(0+j*ldR),1)};
 	  std::cout << "ritz("<<j<<") = " << *(L.data() + j) << " / rho("<<j<<") = " << rho/norm << std::endl;
 	}
