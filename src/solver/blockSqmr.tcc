@@ -445,42 +445,28 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     std::swap(d0,d1);
 
 
-    // TODO: Find a faster way to do the following data movements
+    
     // a1 = qq(1:rhs,1:rhs)';
-    for(int i=0; i<nrhs; i++){
-      for(int j=0; j<nrhs; j++){
-        a1[j+i*lda1] = hhQ[i + j*ldhhQ];
-      }
-    }
-
+    la.geam('N', 'T', nrhs, nrhs, zero, hhQ.data(), ldhhQ,
+              one, hhQ.data(), ldhhQ, a1.data(), lda1);
+              
     // c1 = qq(1:rhs,rhs+1:2*rhs)';
-    for(int i=0; i<nrhs; i++){
-      for(int j=0; j<nrhs; j++){
-        c1[j+i*ldc1] = hhQ[i + (j+nrhs)*ldhhQ];
-      }
-    }
+    la.geam('N', 'T', nrhs, nrhs, zero, hhQ.data() + nrhs*ldhhQ , ldhhQ,
+              one, hhQ.data()+ nrhs*ldhhQ, ldhhQ, c1.data(), ldc1);
+              
 
     // b1 = qq(rhs+1:2*rhs,1:rhs)';
-    for(int i=0; i<nrhs; i++){
-      for(int j=0; j<nrhs; j++){
-        b1[j+i*ldb1] = hhQ[ (i+nrhs) + j*ldhhQ];
-      }
-    }
+    la.geam('N', 'T', nrhs, nrhs, zero, hhQ.data() + nrhs , ldhhQ,
+              one, hhQ.data()+ nrhs, ldhhQ, b1.data(), ldb1);
 
     // d1 = qq(rhs+1:2*rhs,rhs+1:2*rhs)';
-    for(int i=0; i<nrhs; i++){
-      for(int j=0; j<nrhs; j++){
-        d1[j+i*ldd1] = hhQ[(i+nrhs) + (j+nrhs)*ldhhQ];
-      }
-    }
+    la.geam('N', 'T', nrhs, nrhs, zero, hhQ.data() + nrhs +nrhs*ldhhQ , ldhhQ,
+              one, hhQ.data() + nrhs + nrhs*ldhhQ, ldhhQ, d1.data(), ldd1);
+
 
     // zita = rr(1:rhs,1:rhs);
-    for(int i=0; i<nrhs; i++){
-      for(int j=0; j<nrhs; j++){
-        zita[i+j*ldzita] = hhR[i + j*ldhhR];
-      }
-    }
-
+    la.geam('N', 'N', nrhs, nrhs, zero, hhR.data(), ldhhR,
+              one, hhR.data(), ldhhR, zita.data(), ldzita);
   
     //p2 = (v2-p1*ita-p0*thita)/zita;
     // p2 = v2

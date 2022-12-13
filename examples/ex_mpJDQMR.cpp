@@ -85,9 +85,9 @@ int main() {
   params.numEvals = 3;
   params.maxIters = 30*dim;
   params.dim = dim;
-  params.tol = 1e-8;
+  params.tol = 1e-4;
   params.printStats     = true;
-  params.printIterStats = false;
+  params.printIterStats = true;
 
 
 	mpjd::JD<double,double> jd{vals, rows, cols, params.dim,
