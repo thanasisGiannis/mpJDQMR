@@ -31,12 +31,14 @@ class JD : public basisStatistics, public jdStatistics {
 	  JD() = delete;
 	  JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
 			  int dim_, sparseDS_t DS_, 
+			  /*
 			  std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
 			  std::shared_ptr<std::vector<fp>> L_, 
 			  std::shared_ptr<std::vector<fp>> R_, int &ldR_, 
+			  */
 			  fp norm_, struct mpjdParam &params); 
 
-	  void solve();									 
+	  std::tuple<std::vector<fp>,std::vector<fp>,std::vector<fp>> solve();									 
 
   private:	
 	  bool Check_Convergence();

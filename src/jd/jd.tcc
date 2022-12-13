@@ -7,18 +7,20 @@ template<class fp, class sfp>
 mpjd::JD<fp,sfp>::JD(std::vector<fp> vals_, 
   std::vector<int> row_index_, std::vector<int> col_index_,
   int dim_, sparseDS_t DS_, 
+  /*
   std::shared_ptr<std::vector<fp>> Q_, int &ldQ_, 
   std::shared_ptr<std::vector<fp>> L_, 
   std::shared_ptr<std::vector<fp>> R_, int &ldR_, 
+  */
   fp norm_, struct mpjdParam &params)
   : eigTarget(params.eigTarget),
     parameters(params),
     maxIters(params.maxIters),
     dim(params.dim),
     tol(params.tol),
-    Qlocked(Q_), ldQlocked(ldQ_),
-    Llocked(L_),
-    Rlocked(R_), ldRlocked(ldR_),
+    Qlocked{std::shared_ptr<std::vector<fp>>(new std::vector<fp>)}, //ldQlocked(ldQ_),
+    Llocked{std::shared_ptr<std::vector<fp>>(new std::vector<fp>)},
+    Rlocked{std::shared_ptr<std::vector<fp>>(new std::vector<fp>)}, //ldRlocked(ldR_),
     mat(vals_, row_index_, col_index_, dim_, DS_, norm_, la),
     basis(std::move(std::unique_ptr<Subspace<fp>>(new Subspace<fp>(mat, dim_, 
       params.numEvals, params.eigTarget, params.maxBasis,la,
@@ -44,7 +46,7 @@ void mpjd::JD<fp,sfp>::printIterationStats(const int loopIter) {
       << "\%||R(" << loopIter << "," << j << ")||=" << rho/mat.Norm() 
       << std::endl;
   }
-  std::cout << "======================" << std::endl;
+  std::cout << "\% ======================" << std::endl;
 }
 
 

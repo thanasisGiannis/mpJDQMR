@@ -63,6 +63,7 @@ int main() {
 	std::vector<double>     x;//{1,1,1};
 	std::vector<double>     y;//{0,0,0};
 	
+	/*
 	std::shared_ptr<std::vector<double>> Q{}; int ldQ;
 	std::shared_ptr<std::vector<double>> L{}; 
 	std::shared_ptr<std::vector<double>> R{}; int ldR;
@@ -70,7 +71,7 @@ int main() {
 	Q = std::shared_ptr<std::vector<double>>(new std::vector<double>);
 	L = std::shared_ptr<std::vector<double>>(new std::vector<double>);
 	R = std::shared_ptr<std::vector<double>>(new std::vector<double>);
-	
+	*/
 	
 	int    dim{};
 	double norm{};
@@ -82,28 +83,28 @@ int main() {
 
   mpjd::mpjdParam params;
   params.numEvals = 3;
-  params.maxIters = 3*dim;
+  params.maxIters = 30*dim;
   params.dim = dim;
-  params.tol = 1e-02;
+  params.tol = 1e-8;
   params.printStats     = true;
-  params.printIterStats = true;
+  params.printIterStats = false;
 
 
-	mpjd::JD<double,half> jd{vals, rows, cols, params.dim,
-	  mpjd::sparseDS_t::COO, Q, ldQ, L, R, ldR, norm, params};
+	mpjd::JD<double,double> jd{vals, rows, cols, params.dim,
+	  mpjd::sparseDS_t::COO, 
+	  //Q, ldQ, L, R, ldR,
+	  norm, params};
 			
-	jd.solve();	
+	auto t = jd.solve();	
 	
-	//double *Q_ = Q->data();
-	double *R_ = R->data();
-	double  rho{};
-		
-	for(auto j=0;j<params.numEvals;j++){
-	  
-	  rho = la.nrm2(params.dim,&R_[0+j*ldR],1);
-	  std::cout << "ritz("<<j<<") = " << *(L->data() + j) << " / rho("<<j<<") = " << rho/norm << std::endl;
+	std::vector<double> Q = std::get<0>(t); //int ldQ = dim;
+	std::vector<double> L = std::get<1>(t);
+	std::vector<double> R = std::get<2>(t); int ldR = dim;
+	
+	for(int j=0;j<params.numEvals;j++){
+	  double rho{la.nrm2(dim,R.data()+(0+j*ldR),1)};
+	  std::cout << "ritz("<<j<<") = " << *(L.data() + j) << " / rho("<<j<<") = " << rho/norm << std::endl;
 	}
-	
 	
 }
 

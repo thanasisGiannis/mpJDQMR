@@ -1,4 +1,3 @@
-//TODO: Update references to smart pointers
 #pragma once
 
 #include "../matrix/matrix.h"
@@ -28,7 +27,7 @@ class Subspace : public basisStatistics {
 	  void Subspace_update_basis();
 	  void Subspace_projected_mat_eig();
 	  void Subspace_eig_residual();
-	  bool Check_Convergence(fp tol);
+	  bool Check_Convergence_and_lock(fp eigenTol, bool lock);
     
     void Subspace_Check_size_and_restart();
     

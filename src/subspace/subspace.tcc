@@ -1,11 +1,11 @@
-//TODO: Format file
-
 #include <iostream>
 
 #include <random>
 #include <algorithm>
 #include <vector>
 #include <iterator>
+
+#include <omp.h>
 
 #include "../blasWrappers/blasWrappers.h"
 
@@ -147,26 +147,30 @@ void mpjd::Subspace<fp>::Subspace_orth_direction(){
   // here a locking procedure should take place
   /* w = orth(Qlocked,w) */
   int numEvalsLocked = static_cast<int>(Llocked->size());
-	for(int j=0; j < blockSize; j++){
-		for(int i=0; i < numEvalsLocked; i++){
-		    // alpha = Qlocked(i)'v
-				fp alpha {-la.dot(rows,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1)};
-				// v = v - Qlocked(i)*alpha
-				la.axpy(rows,alpha,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1); 
-		}	
-	}
-	
+	for(int k=0; k<3; k++){
+	  for(int j=0; j < blockSize; j++){
+		  for(int i=0; i < numEvalsLocked; i++){
+		      // alpha = Qlocked(i)'v
+				  fp alpha {-la.dot(rows,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1)};
+				  // v = v - Qlocked(i)*alpha
+				  la.axpy(rows,alpha,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1); 
+		  }	
+	  }
+  }
+  
+  	
   VV = static_cast<fp*>(V.data());
   /* w = orth(V,w) */
-	for(int j=0; j < blockSize; j++){
-		for(int i=0; i < cols ; i++){
-		    // alpha = V(i)'w
-				fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldw],1)};
-				// v = v - V(i)*alpha
-				la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldw],1); 
-		}	
-	}
-  
+	for(int k=0; k<3; k++){
+	  for(int j=0; j < blockSize; j++){
+		  for(int i=0; i < cols ; i++){
+		      // alpha = V(i)'w
+				  fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldw],1)};
+				  // v = v - V(i)*alpha
+				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldw],1); 
+		  }	
+	  }
+  }
   
   
   /* w = orth(w) */
@@ -325,17 +329,20 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 	
 	
 	// R = R*L = Q*L 
+	
 	for(auto j=0; j<numEvals; j++){
 		la.scal(dim, L_[j], &R_[0+j*ldR], 1);
 	}
 	
 	// R = AV*q-R = AV*q-Q*L
-	la.gemm('N', 'N',dim, numEvals, basisSize*blockSize,
+	la.gemm('N', 'N',dim, blockSize, basisSize*blockSize,
 	    one, AV_, ldAV, q_, ldq, minus_one, R_, ldR);
 }
 
 template<class fp>
-bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
+bool mpjd::Subspace<fp>::
+Check_Convergence_and_lock(const fp eigenTol, bool lock) {
+
 
 
 	fp *R_ = R->data();
@@ -345,23 +352,26 @@ bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
   std::vector<fp> tmpQprev;
   std::vector<fp> tmpL;
   std::vector<fp> rhos;
-  
+
+  fp tol = eigenTol;
   
   int convPairsNum = 0;
-	for(auto c=0; c<numEvals; c++){
+  auto matNorm = mat.Norm();
+	for(auto c=0; c<blockSize; c++){
 		rhos.push_back(la.nrm2(dim,&R_[0+c*ldR],1)); // calculate all residuals
-		if(rhos[c] < tol*mat.Norm()){
+		if(rhos[c] <= tol*matNorm || true == lock){
 		  convPairsNum++;
 		}
   }  
   
+  //if(convPairsNum != blockSize) return false; // test purpose
   if(convPairsNum == 0) return false; // if non converged just return
   
   /*
     THIS IS A LOCKING PROCEDURE IN A BLOCKING JACOBI DAVIDSON METHOD
   */
-  for(auto c=0; c<numEvals; c++){
-		if(rhos[c] < tol*mat.Norm()){
+  for(int c=0; c<blockSize; c++){
+		if(rhos[c] <= tol*mat.Norm() || true == lock){
 		  // if is a converged eigenpair
 		  for(int r=0; r<dim; r++){
 		    Qlocked->push_back(Q->data()[r+c*ldQ]); 
@@ -383,37 +393,47 @@ bool mpjd::Subspace<fp>::Check_Convergence(const fp tol){
   
   
   
-  if(numEvals == 0){
-    Q->clear();
-    L->clear();
-    R->clear();
-    Qprev.clear();
+	lockedNumEvals += convPairsNum; 
+  blockSize      -= convPairsNum;
+  
+  if(blockSize <= 0) {
+  
+    blockSize = numEvals;
+    basisSize = 0;
+    lockedNumEvals = 0;
+    
+    std::swap(*w, *Qlocked);
+    Qlocked->clear();
+    Llocked->clear();
+    Rlocked->clear();
+    
+    V.clear();
+    AV.clear();
+	
+    // locked eigenvectors
+	  Q->clear(); 
+	  init_vec_zeros(Q,dim*blockSize);
+    
+    Subspace_orth_direction();           // w = orth(w)
+    Subspace_project_at_new_direction(); // T= w'*A*w // 
+    Subspace_update_basis();             // V = [ V w]
+    Subspace_projected_mat_eig();        // [q,L] = eig(T); Q = V*q;
+    Subspace_eig_residual();             // R = AV*q-Q*L
+    
+    std::swap(*Qlocked, *Q);
+    std::swap(*Llocked, *L);
+    std::swap(*Rlocked, *R);
     
     return true;
   }
   
-	lockedNumEvals += convPairsNum; 
-  //numEvals       -= convPairsNum;	
-  blockSize      -= convPairsNum;
-  
-  Q->resize(dim*blockSize);
-	Qprev.resize(dim*blockSize);
-	R->resize(dim*blockSize);
-	L->resize(blockSize);
-	
-	
-  
-  
-	std::copy(tmpQ.begin(),tmpQ.end(),Q->begin());		
-	std::copy(tmpQprev.begin(),tmpQprev.end(),Qprev.begin());		
-	
-  std::copy(tmpR.begin(),tmpR.end(),R->begin());		
-  std::copy(tmpL.begin(),tmpL.end(),L->begin());		
 
-  if(blockSize <= 0) return true;
+  *Q     = tmpQ;
+  Qprev  = tmpQprev;
+  *R     = tmpR;
+  *L     = tmpL;  
   
-  
-  if( convPairsNum > 0 ) Subspace_restart();
+  if( blockSize > 0 ) Subspace_restart();
  
   return false;
 
@@ -455,12 +475,12 @@ void mpjd::Subspace<fp>::Subspace_restart(){
 
   /* AV = A*V */
  	std::fill(AV.begin(), AV.end(), static_cast<fp>(0.0));
- 	mat.matVec(V,ldV, AV, ldAV, basisSize*numEvals);     // AV  = A*V
+ 	mat.matVec(V,ldV, AV, ldAV, basisSize*blockSize);     // AV  = A*V
 
   /* T = V'AV */
   fp one  = 1.0;
   fp zero = 0.0;
-  la.gemm('T', 'N', basisSize*numEvals, basisSize*numEvals, dim,
+  la.gemm('T', 'N', basisSize*numEvals, basisSize*blockSize, dim,
 						one, V.data(), ldV, AV.data(), ldAV, zero, T.data(), ldT);
 						
   updateRestarts(1);
