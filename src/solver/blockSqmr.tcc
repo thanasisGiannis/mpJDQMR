@@ -333,6 +333,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   // main loop of the block algorithm
   int loopNum;
   sfp nrm2      = static_cast<sfp>(1.0);
+  sfp nrm2_prev = static_cast<sfp>(1.0);
   int maxloopNum = 3*dim;
   for(loopNum=0; loopNum<maxloopNum; loopNum++) {
     // v3 = A*v2-v1*vita;
@@ -543,12 +544,12 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     // MAYBE THIS LOOP SHOULD BE IN A FUNCTION
     int nConv = 0;
     for(int i=0; i<nrhs; i++) {
-      
+      nrm2_prev = nrm2;
       nrm2 = la.nrm2(dim, sR.data() + 0+i*ldsR, 1); 
       //std::cout << i+1 << " "<<  nrm2 << std::endl;
       // TODO:  at this point we need to implement stopping criteria
       //        based on optimal convergence of jacobi davidson 
-      if (nrm2 < 1e-01) {
+      if (nrm2 < 1e-01 || std::abs(nrm2-nrm2_prev)/std::abs(nrm2) < 1e-03 ) {
         nConv++;
       }
     }

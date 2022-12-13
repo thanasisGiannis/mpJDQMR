@@ -290,10 +290,11 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
         /*  t  = t + delta */
         la.axpy(dim,one,delta.data(),1,t.data(),1);
 
+        /*
         if(abs(g) < tol){
            //break; // TODO: it stops too early
         }
-
+        */
         gama = c*c*Thita_; 
         xi = c*c*alpha;    
         
@@ -316,10 +317,11 @@ int mpjd::ScaledSQMR<fp,sfp>::solve_eq(){
          r00 = rkm;
         }
 
+        /*
         if(rho_ < tol){
         //   break; // TODO: it stops too early
         }
-
+        */
         rkm = sqrt(g*g/f);
         
         if( (g < rkm*std::max(static_cast<fp>(0.99 * std::sqrt(f)),static_cast<fp>(std::sqrt(g/g_))))

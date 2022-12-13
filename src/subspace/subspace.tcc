@@ -1,5 +1,3 @@
-//TODO: Format file
-
 #include <iostream>
 
 #include <random>
@@ -342,7 +340,8 @@ void mpjd::Subspace<fp>::Subspace_eig_residual(){
 }
 
 template<class fp>
-bool mpjd::Subspace<fp>::Check_Convergence_and_lock(const fp eigenTol, bool lock) {
+bool mpjd::Subspace<fp>::
+Check_Convergence_and_lock(const fp eigenTol, bool lock) {
 
 
 
