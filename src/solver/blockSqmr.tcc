@@ -434,12 +434,10 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
 
     // hhR = [zita_; vita2]
-    for(int i=0; i<nrhs; i++){
-      for(int j=0; j<nrhs; j++){
-        hhR[i + j*ldhhR]      = zita_[i+j*ldzita_];
-        hhR[i+nrhs + j*ldhhR] = vita2[i+j*ldvita2];
-      }
-    } 
+    la.geam('N', 'N', nrhs, nrhs, zero, zita_.data(), ldzita_,
+              one, zita_.data(), ldzita_, hhR.data(), ldhhR);
+    la.geam('N', 'N', nrhs, nrhs, zero, vita2.data(), ldvita2,
+              one, vita2.data(), ldvita2, hhR.data() + nrhs, ldhhR);
     
     // [hhQ,hhR] = qr([zita_; vita2];  
     hQR.orth(2*nrhs, nrhs, hhR, ldhhR, hhQ, ldhhQ);  
