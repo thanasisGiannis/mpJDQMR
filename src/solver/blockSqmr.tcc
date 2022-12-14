@@ -1,6 +1,5 @@
 /*
  * TODO: use optimal stopping criteria
- * TODO: make copies faster
  * TODO: faster initialization of the vectors 
  *
  */  
@@ -232,64 +231,70 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   /*
     initiliazing all needed vectors to proper values
   */
+  
+  // TODO: MAYBE THOSE SHOULD BE PASSED AS FUNCTION ATTRIBUTES
   auto& sR = this->sR; auto ldsR = this->ldsR; sR.resize(dim*nrhs);
   auto& x  = this->x; x.resize(dim*nrhs); 
-  memset((void*)x.data(), 0, dim*nrhs*sizeof(sfp));
-
+  
+  
+  
+  std::fill(x.begin(), x.end(),zero);
   /* matvec accumulator */ 
-  memset((void*)y.data(), 0, dim*nrhs*sizeof(sfp));
-
+  std::fill(y.begin(), y.end(),zero);
+  
   /* sQMR step */
-  memset((void*)p0.data(), 0, dim*nrhs*sizeof(sfp));
-  memset((void*)p1.data(), 0, dim*nrhs*sizeof(sfp));
-  memset((void*)p2.data(), 0, dim*nrhs*sizeof(sfp));
+  std::fill(p0.begin(), p0.end(),zero);
+  std::fill(p1.begin(), p1.end(),zero);
+  std::fill(p2.begin(), p2.end(),zero);
+
 
   /* updating residual sR*/
-  memset((void*)Ap0.data(), 0, dim*nrhs*sizeof(sfp));
-  memset((void*)Ap1.data(), 0, dim*nrhs*sizeof(sfp));
+  std::fill(Ap0.begin(), Ap0.end(),zero);
+  std::fill(Ap1.begin(), Ap1.end(),zero);
   
   
   /* lanczos step */
-  memset((void*)v1.data(), 0, dim*nrhs*sizeof(sfp));
-  memset((void*)v2.data(), 0, dim*nrhs*sizeof(sfp));
-  memset((void*)v3.data(), 0, dim*nrhs*sizeof(sfp));
-
+  std::fill(v1.begin(), v1.end(),zero);
+  std::fill(v2.begin(), v2.end(),zero);
+  std::fill(v3.begin(), v3.end(),zero);
   
   
-  memset((void*)alpha.data(), 0, alpha.capacity()*sizeof(sfp));
-  memset((void*)vita.data(),  0, vita.capacity()*sizeof(sfp));
-  memset((void*)vita2.data(), 0, vita2.capacity()*sizeof(sfp));
-
+  std::fill(alpha.begin(), alpha.end(),zero);
+  std::fill(vita.begin(),  vita.end(),zero);
+  std::fill(vita2.begin(), vita2.end(),zero);
+  
 
   /* sQMR matrix */
-  memset((void*)b0.data(), 0, b0.capacity()*sizeof(sfp));
-  memset((void*)d0.data(), 0, d0.capacity()*sizeof(sfp));
+  std::fill(b0.begin(), b0.end(),zero);
+  std::fill(d0.begin(), d0.end(),zero);
 
-  memset((void*)a1.data(), 0, a1.capacity()*sizeof(sfp));
-  memset((void*)b1.data(), 0, b1.capacity()*sizeof(sfp));
-  memset((void*)c1.data(), 0, c1.capacity()*sizeof(sfp));
-  memset((void*)d1.data(), 0, d1.capacity()*sizeof(sfp));
+
+  std::fill(a1.begin(), a1.end(),zero);
+  std::fill(b1.begin(), b1.end(),zero);
+  std::fill(c1.begin(), c1.end(),zero);
+  std::fill(d1.begin(), d1.end(),zero);
 
 
   /* lanczos matrix */
-  memset((void*)ita.data(),   0, ita.capacity()*sizeof(sfp));
-  memset((void*)thita.data(), 0, thita.capacity()*sizeof(sfp));
-  memset((void*)zita.data(),  0, zita.capacity()*sizeof(sfp));
-  memset((void*)zita_.data(), 0, zita_.capacity()*sizeof(sfp));
+  std::fill(ita.begin(), ita.end(),zero);
+  std::fill(thita.begin(), thita.end(),zero);
+  std::fill(zita.begin(), zita.end(),zero);
+  std::fill(zita_.begin(), zita_.end(),zero);
+  
 
 
   /* updating solution sQMR*/
-  memset((void*)tau_.data(), 0, tau_.capacity()*sizeof(sfp));
-  memset((void*)tau.data(),  0, tau.capacity()*sizeof(sfp));
-
+  std::fill(tau_.begin(), tau_.end(),zero);
+  std::fill(tau.begin(), tau.end(),zero);
+  
   
   /*
     helping vector for Householder QR 
     WILL BE INITIATED IN THE householderQR()
   */
-  memset((void*)hhR.data(),  0, hhR.capacity()*sizeof(sfp));
-  memset((void*)hhQ.data(),  0, hhQ.capacity()*sizeof(sfp));
-
+  std::fill(hhR.begin(), hhR.end(),zero);
+  std::fill(hhQ.begin(), hhQ.end(),zero);
+  
   /* matrices set to be equal to identity */
   // d0 = I;
   for(auto i=0; i<nrhs; i++){
@@ -606,7 +611,8 @@ Householder::orth(int m, int n, std::vector<sfp> &R, int ldR,
   if(m<n) exit(-1); // tall and thin only
   
   // Q = I
-  memset((void*)Q.data(),0,Q.capacity()*sizeof(sfp)); 
+  std::fill(Q.begin(), Q.end(), static_cast<sfp>(0.0));
+  
   for(int i=0; i<m; i++){
     Q[i+i*ldQ] = static_cast<sfp>(1.0);
   }
@@ -614,8 +620,8 @@ Householder::orth(int m, int n, std::vector<sfp> &R, int ldR,
   
   for(int k=0; k<n; k++) {
     // x = zeros(m,1); 
-    memset((void*)hhx.data(), 0, hhx.capacity()*sizeof(sfp));    
-
+    std::fill(hhx.begin(), hhx.end(), static_cast<sfp>(0.0));
+    
     // x(k:m,1)=R(k:m,k);
     memcpy(hhx.data()+k, R.data() + k+k*ldR, sizeof(sfp)*(m-k)); 
 
