@@ -112,8 +112,8 @@ mpjd::Householder<fp>::Householder(int dim, int nrhs, LinearAlgebra &la_)
 
 
 template<class fp>
-void mpjd::Householder<fp>::QR(int m, int n, std::vector<fp> &R, int ldR, 
-              std::vector<fp> &Q, int ldQ) {
+void mpjd::Householder<fp>::QR(int m, int n, std::vector<fp> &Q, int ldQ, 
+              std::vector<fp> &R, int ldR) {
 
   
   if(m<n) exit(-1); // tall and thin only
@@ -175,3 +175,67 @@ void mpjd::Householder<fp>::QR(int m, int n, std::vector<fp> &R, int ldR,
   }
   
 }
+
+
+
+template<class fp>
+mpjd::MGS<fp>::MGS(const int dim, const int nrhs, LinearAlgebra &la_)
+: la(la_) {
+  UNUSED(nrhs);
+  UNUSED(dim);
+}
+
+template<class fp>
+bool mpjd::MGS<fp>::QR(int m, int n, std::vector<fp> &Q, int ldQ, 
+              std::vector<fp> &R, int ldR) {
+  /*
+  [~,n] = size(Q);
+  R = zeros(n);
+  for j=1:n
+      r = norm(Q(:,j));
+      R(j,j) = r;
+      Q(:,j) = Q(:,j)/r;
+      for k=j+1:n
+         r = Q(:,j)'*Q(:,k);
+         R(j,k) = r;
+         Q(:,k) = Q(:,k) - r*Q(:,j); 
+      end
+  end
+
+  */
+  std::fill(R.begin(), R.end(), static_cast<fp>(0.0));              
+
+  for(int j=0; j<n; j++) {
+    fp r = la.nrm2(m,Q.data() + 0 +j*ldQ,1);
+    R[j+j*ldR] = r;
+    la.scal(m,static_cast<fp>(1.0)/r,Q.data() + 0 +j*ldQ,1);
+    for(auto k=j+1; k<n; k++) { 
+      r = la.dot(m,Q.data() + 0 +j*ldQ,1,Q.data() + 0 + k*ldQ,1);
+      R[j+k*ldR] = r;
+      la.axpy(m, -r, Q.data() + 0 +j*ldQ, 1, Q.data() + 0 + k*ldQ, 1);
+    }
+  } 
+  return true;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

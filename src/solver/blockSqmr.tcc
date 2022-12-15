@@ -19,7 +19,7 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
 	                             Qlocked_, ldQlocked_, la_)
 	        ,la(la_)
 	        ,hh(Householder<sfp>( 2*L_->size(), L_->size(), la_ ))
-	        ,chol(Cholesky<sfp>(mat_.Dim(), L_->size(), la_))  {
+	        ,mgs(MGS<sfp>(mat_.Dim(), L_->size(), la_))  {
 	        
 	        
     auto nrhs = this->L->size();
@@ -329,7 +329,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     one, v3.data(), ldv3);
 
   //[v3,vita2] = qr(v3,0);
-  if(false == chol.QR(dim, nrhs, v3,ldv3,vita2,ldvita2)) {
+  if(false == mgs.QR(dim, nrhs, v3,ldv3,vita2,ldvita2)) {
     swap(x,sR);
     return 0;
   }
@@ -390,7 +390,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
 
     //[v3,vita2] = qr(v3,0);
-    if(false == chol.QR(dim, nrhs, v3, ldv3, vita2, ldvita2)) {
+    if(false == mgs.QR(dim, nrhs, v3, ldv3, vita2, ldvita2)) {
       if(loopNum == 0) {
         std::swap(x,sR);
       }
@@ -444,7 +444,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
               one, vita2.data(), ldvita2, hhR.data() + nrhs, ldhhR);
     
     // [hhQ,hhR] = qr([zita_; vita2];  
-    hh.QR(2*nrhs, nrhs, hhR, ldhhR, hhQ, ldhhQ);  
+    hh.QR(2*nrhs, nrhs, hhQ, ldhhQ, hhR, ldhhR);  
 
 
     // update 

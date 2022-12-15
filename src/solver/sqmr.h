@@ -158,7 +158,7 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
     std::vector<sfp> hhQ;  int ldhhQ;        // 2nrhs x nrhs 
        
     // Cholesky orthogonalization provider
-    Cholesky<sfp> chol;
+    MGS<sfp> mgs;
 };
 }
 

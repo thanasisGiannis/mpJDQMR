@@ -97,9 +97,13 @@ int main() {
 			
 	auto t = jd.solve();	
 	
-	std::vector<double> Q = std::get<0>(t); //int ldQ = dim;
-	std::vector<double> L = std::get<1>(t);
-	std::vector<double> R = std::get<2>(t); int ldR = dim;
+	std::vector<double> Q{}; 
+	std::vector<double> L{}; 
+	std::vector<double> R{}; 
+	
+	std::swap(Q,std::get<0>(t));
+	std::swap(L,std::get<1>(t));
+	std::swap(R,std::get<2>(t)); int ldR = dim;
 	
 	for(int j=0;j<params.numEvals;j++){
 	  double rho{la.nrm2(dim,R.data()+(0+j*ldR),1)};
