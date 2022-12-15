@@ -713,14 +713,9 @@ Cholesky::chol(const int n, std::vector<sfp> &L, int ldL) {
       for(int k=0; k<j; k++){
         sum += L[k+i*ldL]*L[k+j*ldL];
       }
-      
-//      std::cout << L[j + j*ldL] << std::endl;
       L[j+i*ldL] = (static_cast<sfp>(1.0)/L[j+j*ldL])*(B[j+i*ldB]-sum);
     }
   }
-  
-  //std::swap(A,L);
-  //std::swap(ldA,ldL);
 }
 
 template<class fp, class sfp>
@@ -745,40 +740,6 @@ Cholesky::QR(const int m, const int n,
           Q.data(), ldQ);
 
 }
-        
-
-
-#if 0
-template<class fp, class sfp>
-void mpjd::BlockScaledSQMR<fp,sfp>::orth_v3_update_vita(){
-
-  auto VV = static_cast<sfp*>(v3.data());
-  int ldV = ldv3;
-  
-  int rows = this->mat->Dim();
-  int cols = this->L->size();
-
-  /* v3 = orth(v3) */
-  for(int k=0; k<1; k++){
-	  for(int j=0; j < cols; j++){
-	    sfp* v_j = &VV[0+j*ldV];
-		  for(int i=0; i < j ; i++){
-		      sfp* v_i = &VV[0+i*ldV];
-		      // alpha = V(i)'v
-				  auto alpha {la.dot(rows,v_i,1,v_j,1)};
-          vita2[i + j*ldvita2] = alpha;
-				  // v = v - V(i)*alpha
-				  la.axpy(rows, -alpha,v_i,1,v_j,1); 
-		  }	
-		  // v = v/norm(v)
-		  auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
-		  vita2[j + j*ldvita2] = alpha;
-		  la.scal(rows,static_cast<sfp>(1.0/alpha),&VV[0+j*ldV],1);    
-	  }
-	}
-}
-#endif
-    
 
 template<class fp, class sfp>
 std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
