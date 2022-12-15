@@ -3,7 +3,7 @@
  * TODO: faster initialization of the vectors 
  * TODO: orth_v3_update_vita(); // this should be an object
  */  
-
+#include <cmath>
 
 
 #define UNUSED(expr) static_cast<void>(expr)
@@ -234,8 +234,8 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   */
   
   // TODO: MAYBE THOSE SHOULD BE PASSED AS FUNCTION ATTRIBUTES
-  auto& sR = this->sR; auto ldsR = this->ldsR; sR.resize(dim*nrhs);
-  auto& x  = this->x; x.resize(dim*nrhs); 
+  auto& sR = this->sR; auto ldsR = this->ldsR; //sR.resize(dim*nrhs);
+  auto& x  = this->x; //x.resize(dim*nrhs); 
   
   
   
@@ -329,7 +329,10 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     one, v3.data(), ldv3);
 
   //[v3,vita2] = qr(v3,0);
-  chol.QR(dim, nrhs, v3,ldv3,vita2,ldvita2);
+  if(false == chol.QR(dim, nrhs, v3,ldv3,vita2,ldvita2)) {
+    swap(x,sR);
+    return 0;
+  }
   
   std::swap(v2, v3);
   std::swap(vita, vita2);
@@ -387,8 +390,12 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
 
     //[v3,vita2] = qr(v3,0);
-    chol.QR(dim, nrhs, v3,ldv3,vita2,ldvita2);
-
+    if(false == chol.QR(dim, nrhs, v3, ldv3, vita2, ldvita2)) {
+      if(loopNum == 0) {
+        std::swap(x,sR);
+      }
+      break;
+    }
     //thita = b0*vita;
     la.gemm('N', 'N', nrhs, nrhs, nrhs, 
       one, b0.data(), ldb0, vita.data(), ldvita,
@@ -533,7 +540,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
       //std::cout << i+1 << " "<<  nrm2 << std::endl;
       // TODO:  at this point we need to implement stopping criteria
       //        based on optimal convergence of jacobi davidson 
-      if (nrm2 < 1e-01 || std::abs(nrm2-nrm2_prev)/std::abs(nrm2) < 1e-03 ) {
+      if (nrm2 < 1e-01 || std::abs(nrm2-nrm2_prev)/std::abs(nrm2) < 1e-01 ) {
         nConv++;
       }
     }
@@ -667,6 +674,8 @@ Cholesky::Cholesky(const int dim, const int nrhs, LinearAlgebra &la_)
 : la(la_) {
 
   B.reserve(nrhs*nrhs);
+  B.resize(nrhs*nrhs);
+  std::fill(B.begin(), B.end(), static_cast<sfp>(0.0));
   ldB = nrhs;
   UNUSED(dim);
 
@@ -674,7 +683,7 @@ Cholesky::Cholesky(const int dim, const int nrhs, LinearAlgebra &la_)
 
 
 template<class fp, class sfp>
-void mpjd::BlockScaledSQMR<fp,sfp>::
+bool mpjd::BlockScaledSQMR<fp,sfp>::
 Cholesky::chol(const int n, std::vector<sfp> &L, int ldL) {
   // L = chol(B);
   
@@ -704,41 +713,44 @@ Cholesky::chol(const int n, std::vector<sfp> &L, int ldL) {
   for(int j=0; j<n; j++){
     sum = static_cast<sfp>(0.0);
     for(int k=0; k<j; k++){
-      sum += L[k+j*ldL]*L[k+j*ldL];
+      sum = sum+ L[k+j*ldL]*L[k+j*ldL];
     }
     L[j+j*ldL] = std::sqrt(B[j+j*ldB]-sum);
+    if(std::isnan(L[j+j*ldL])) return false;
     
     for(int i=j+1; i<n; i++){
       sum = static_cast<sfp>(0.0);
       for(int k=0; k<j; k++){
-        sum += L[k+i*ldL]*L[k+j*ldL];
+        sum = sum + L[k+i*ldL]*L[k+j*ldL];
       }
       L[j+i*ldL] = (static_cast<sfp>(1.0)/L[j+j*ldL])*(B[j+i*ldB]-sum);
+      if(std::isnan(L[j+i*ldL])) return false;
     }
   }
+  return true;
 }
 
 template<class fp, class sfp>
-void mpjd::BlockScaledSQMR<fp,sfp>::
+bool mpjd::BlockScaledSQMR<fp,sfp>::
 Cholesky::QR(const int m, const int n,
              std::vector<sfp> &Q, const int ldQ,
              std::vector<sfp> &R, const int ldR) {
  
   // R : n x n
   // Q : m x n 
-  
+  std::fill(B.begin(), B.end(), static_cast<sfp>(0.0));
   // B = Q'*Q; 
   la.gemm('T', 'N',
     n, n, m, static_cast<sfp>(1.0), Q.data(), ldQ,
     Q.data(), ldQ, static_cast<sfp>(0.0), B.data(), ldB);
-  
-  // R = chol(B);  
-  chol(n, R, ldR);  
+
+  if(false == chol(n, R, ldR)) return false;  
     
   // Q = Q/R;
   la.trsm('C', 'R', 'U', 'N', 'N', m, n, static_cast<sfp>(1.0), R.data(), ldR,
           Q.data(), ldQ);
 
+  return true;
 }
 
 template<class fp, class sfp>
