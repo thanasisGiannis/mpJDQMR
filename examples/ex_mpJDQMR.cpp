@@ -82,12 +82,12 @@ int main() {
 	readSymMtx<double>("../matrices/finan512.mtx",rows,cols,vals,dim,norm);
 
   mpjd::mpjdParam params;
-  params.numEvals = 3;
+  params.numEvals = 5;
   params.maxIters = 30*dim;
   params.dim = dim;
   params.tol = 1e-8;
   params.printStats     = true;
-  params.printIterStats = false;
+  params.printIterStats = true;
 
 
 	mpjd::JD<double,double> jd{vals, rows, cols, params.dim,
