@@ -75,8 +75,9 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
     class Householder {
       public:
         Householder(int dim, int nrhs, LinearAlgebra &la_);
-        void orth(int m, int n, std::vector<sfp> &R, int ldR, 
+        void QR(int m, int n, std::vector<sfp> &R, int ldR, 
               std::vector<sfp> &Q, int ldQ);
+      
       private:
         std::vector<sfp> hhQz; int ldhhQz;
         std::vector<sfp> hhx;                    // dim x 1
@@ -86,12 +87,24 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
         LinearAlgebra &la;
     };
     
+    class Cholesky {
+      public: 
+        Cholesky(const int dim, const int nrhs, LinearAlgebra &la_);
+        void QR(const int m, const int n,
+                      std::vector<sfp> &R, const int ldR,
+                      std::vector<sfp> &Q, const int ldQ);
+        
+        private:
+          std::vector<sfp> B; int ldB; // this vector will be used
+                                       // to create upper triangular 
+                                       // cholesky matrix
+          
+          LinearAlgebra &la;
+          void chol(const int dim, std::vector<sfp> &R, const int ldR);
+    };
+    
     int solve_eq(); 
-    void orth_v3_update_vita(); 
-    void householderQR(int m, int n, std::vector<sfp> &R, int ldR, 
-                       std::vector<sfp> &Q, int ldQ);
-    
-    
+        
     /* sparse matrix vector accumulator */
     std::vector<sfp> y; int ldy; // dim x nrhs
     
@@ -138,13 +151,13 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
     LinearAlgebra &la;
     
     // householder orthogonalization provider
-    Householder hQR;
+    Householder hh;
     /* helping vector for Householder QR */
     std::vector<sfp> hhR;  int ldhhR;        // 2nrhs x nrhs 
     std::vector<sfp> hhQ;  int ldhhQ;        // 2nrhs x nrhs 
        
-    
-    
+    // Cholesky orthogonalization provider
+    Cholesky chol;
 };
 }
 

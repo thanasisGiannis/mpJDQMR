@@ -1,7 +1,7 @@
 /*
  * TODO: use optimal stopping criteria
  * TODO: faster initialization of the vectors 
- *
+ * TODO: orth_v3_update_vita(); // this should be an object
  */  
 
 
@@ -18,7 +18,8 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
 	        : ScaledSQMR<fp,sfp>(mat_, Q_, ldQ_, L_, R_, ldR_, 
 	                             Qlocked_, ldQlocked_, la_)
 	        ,la(la_)
-	        ,hQR(Householder( 2*L_->size(), L_->size(), la_ ))  {
+	        ,hh(Householder( 2*L_->size(), L_->size(), la_ ))
+	        ,chol(Cholesky(mat_.Dim(), L_->size(), la_))  {
 	        
 	        
     auto nrhs = this->L->size();
@@ -328,7 +329,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     one, v3.data(), ldv3);
 
   //[v3,vita2] = qr(v3,0);
-  orth_v3_update_vita();
+  chol.QR(dim, nrhs, v3,ldv3,vita2,ldvita2);
   
   std::swap(v2, v3);
   std::swap(vita, vita2);
@@ -386,8 +387,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
 
 
     //[v3,vita2] = qr(v3,0);
-    orth_v3_update_vita();
-
+    chol.QR(dim, nrhs, v3,ldv3,vita2,ldvita2);
 
     //thita = b0*vita;
     la.gemm('N', 'N', nrhs, nrhs, nrhs, 
@@ -410,10 +410,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     //ita = ita+b1*alpha
     la.gemm('N', 'N', nrhs, nrhs, nrhs, 
       one, b1.data(), ldb1, alpha.data(), ldalpha,
-      one, ita.data(), ldita);
-
-
-      
+      one, ita.data(), ldita);      
 
     //zita_ = c1*d0*vita+d1*alpha;
     //tau_2 = c1*d0
@@ -440,14 +437,12 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
               one, vita2.data(), ldvita2, hhR.data() + nrhs, ldhhR);
     
     // [hhQ,hhR] = qr([zita_; vita2];  
-    hQR.orth(2*nrhs, nrhs, hhR, ldhhR, hhQ, ldhhQ);  
+    hh.QR(2*nrhs, nrhs, hhR, ldhhR, hhQ, ldhhQ);  
 
 
     // update 
     std::swap(b0,b1);
     std::swap(d0,d1);
-
-
     
     // a1 = qq(1:rhs,1:rhs)';
     la.geam('N', 'T', nrhs, nrhs, zero, hhQ.data(), ldhhQ,
@@ -570,7 +565,6 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   } // end of main loop
   
   return loopNum;
-
 }
 
 
@@ -602,7 +596,7 @@ Householder::Householder(int dim, int nrhs, LinearAlgebra &la_)
 
 template<class fp,class sfp>
 void mpjd::BlockScaledSQMR<fp,sfp>::
-Householder::orth(int m, int n, std::vector<sfp> &R, int ldR, 
+Householder::QR(int m, int n, std::vector<sfp> &R, int ldR, 
               std::vector<sfp> &Q, int ldQ) {
 
   
@@ -666,6 +660,95 @@ Householder::orth(int m, int n, std::vector<sfp> &R, int ldR,
   
 }
 
+
+template<class fp, class sfp>
+mpjd::BlockScaledSQMR<fp,sfp>::
+Cholesky::Cholesky(const int dim, const int nrhs, LinearAlgebra &la_)
+: la(la_) {
+
+  B.reserve(nrhs*nrhs);
+  ldB = nrhs;
+  UNUSED(dim);
+
+}
+
+
+template<class fp, class sfp>
+void mpjd::BlockScaledSQMR<fp,sfp>::
+Cholesky::chol(const int n, std::vector<sfp> &L, int ldL) {
+  // L = chol(B);
+  
+  // L = zeros(n);
+  std::fill(L.begin(), L.end(), static_cast<sfp>(0.0));
+
+/*
+  [n,~] = size(A);
+  for j=1:n
+      sum = 0;
+      for k=1:j
+          sum = sum + L(k,j)*L(k,j);
+      end
+      L(j,j) = sqrt(A(j,j)-sum);
+
+      for i=j+1:n
+          sum = 0;
+          for k=1:j
+             sum = sum + L(k,i)*L(k,j); 
+          end
+          L(j,i) = (1/L(j,j))*(A(j,i)-sum);
+      end
+  end
+*/
+  
+  sfp sum;
+  for(int j=0; j<n; j++){
+    sum = static_cast<sfp>(0.0);
+    for(int k=0; k<j; k++){
+      sum += L[k+j*ldL]*L[k+j*ldL];
+    }
+    L[j+j*ldL] = std::sqrt(B[j+j*ldB]-sum);
+    
+    for(int i=j+1; i<n; i++){
+      sum = static_cast<sfp>(0.0);
+      for(int k=0; k<j; k++){
+        sum += L[k+i*ldL]*L[k+j*ldL];
+      }
+      
+//      std::cout << L[j + j*ldL] << std::endl;
+      L[j+i*ldL] = (static_cast<sfp>(1.0)/L[j+j*ldL])*(B[j+i*ldB]-sum);
+    }
+  }
+  
+  //std::swap(A,L);
+  //std::swap(ldA,ldL);
+}
+
+template<class fp, class sfp>
+void mpjd::BlockScaledSQMR<fp,sfp>::
+Cholesky::QR(const int m, const int n,
+             std::vector<sfp> &Q, const int ldQ,
+             std::vector<sfp> &R, const int ldR) {
+ 
+  // R : n x n
+  // Q : m x n 
+  
+  // B = Q'*Q; 
+  la.gemm('T', 'N',
+    n, n, m, static_cast<sfp>(1.0), Q.data(), ldQ,
+    Q.data(), ldQ, static_cast<sfp>(0.0), B.data(), ldB);
+  
+  // R = chol(B);  
+  chol(n, R, ldR);  
+    
+  // Q = Q/R;
+  la.trsm('C', 'R', 'U', 'N', 'N', m, n, static_cast<sfp>(1.0), R.data(), ldR,
+          Q.data(), ldQ);
+
+}
+        
+
+
+#if 0
 template<class fp, class sfp>
 void mpjd::BlockScaledSQMR<fp,sfp>::orth_v3_update_vita(){
 
@@ -694,7 +777,7 @@ void mpjd::BlockScaledSQMR<fp,sfp>::orth_v3_update_vita(){
 	  }
 	}
 }
-
+#endif
     
 
 template<class fp, class sfp>
