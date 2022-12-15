@@ -192,18 +192,6 @@ void mpjd::LinearAlgebra::trsm(const char Layout, const char side,
 } 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 /* FLOAT */
 void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
     const int m, const int n, const int k, 
@@ -375,7 +363,7 @@ void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
     const int M, const int N, const int K,
     const half_float::half alpha, const half_float::half* A, const int ldA,
     const half_float::half* B, const int  ldB,
-    const half_float::half beta, half_float::half* C, int ldC) {
+    const half_float::half beta, half_float::half* C, const int ldC) {
   
 
   if( transa == 'N' && transb == 'N' ) {
@@ -394,17 +382,17 @@ void mpjd::LinearAlgebra::gemm(const char transa, const char  transb,
 void mpjd::LinearAlgebra::gemmABT(const int M, const int N, const int K,
     const half_float::half alpha, const half_float::half* A, const int ldA,
     const half_float::half* B, const int ldB,
-    const half_float::half beta, half_float::half* C,int ldC) {
+    const half_float::half beta, half_float::half* C, const int ldC) {
 // TODO: Find a better performance wise 
 //       implementation of this mat-mat
 
-  #pragma omp parallel for collapse(2) if(M>1 && N>1)
+  //  #pragma omp parallel for collapse(2) if(M>1 && N>1)
   for(int i=0; i<M; i++){
     for(int j=0; j<N; j++){
     
      half_float::half c = static_cast<half_float::half>(0.0);
       for(int k=0; k<K; k++){
-         c += A[i+k*ldA]*B[j+k*ldB];     
+         c = c + A[i+k*ldA]*B[j+k*ldB];     
       }
       C[i+j*ldC] = beta*C[i+j*ldC] + alpha*c;
       
@@ -415,18 +403,18 @@ void mpjd::LinearAlgebra::gemmABT(const int M, const int N, const int K,
 void mpjd::LinearAlgebra::gemmAB(const int M, const int N, const int K,
     const half_float::half alpha, const half_float::half* A, const int ldA,
     const half_float::half* B, const int ldB,
-    const half_float::half beta, half_float::half* C,int ldC) {
+    const half_float::half beta, half_float::half* C, const int ldC) {
 
 
 // TODO: Find a better performance wise 
 //       implementation of this mat-mat
 
- #pragma omp parallel for collapse(2) if(M>1 && N>1)
+ //#pragma omp parallel for collapse(2) if(M>1 && N>1)
  for(int i=0; i<M; i++){
     for(int j=0; j<N; j++){
       half_float::half c = static_cast<half_float::half>(0.0);
       for(int k=0; k<K; k++){
-         c += A[i+k*ldA]*B[k+j*ldB];     
+         c = c + A[i+k*ldA]*B[k+j*ldB];     
       }
       C[i+j*ldC] = beta*C[i+j*ldC] + alpha*c;
     }
@@ -437,26 +425,26 @@ void mpjd::LinearAlgebra::gemmAB(const int M, const int N, const int K,
 void mpjd::LinearAlgebra::gemmATB(const int M, const int N, const int K,
     const half_float::half alpha, const half_float::half* A, const int ldA,
     const half_float::half* B, const int ldB,
-    const half_float::half beta, half_float::half* C, int ldC) {
+    const half_float::half beta, half_float::half* C, const int ldC) {
 
   /* 
     Both A and B are accessed by column major 
     dot products should be cache efficient
     using simd and reduction in order to accelerate
   */
-  #pragma omp parallel for collapse(2) if(M>1 || N>1)
-  for (int jj = 0; jj < N; jj++) {
-     for (int ii = 0; ii < M; ii++) {
-          half_float::half cc = static_cast<half_float::half>(0.0);// C[ii+jj*ldC];
-          
-          //#pragma omp simd reduction(+:cc)
-          #pragma omp simd reduction(+:cc)
-          for (int kk = 0; kk < K; kk++) {
-              cc += A[kk+ii*ldA]*B[kk+jj*ldB] ;
-          }
-          C[ii+jj*ldC] = beta*C[ii+jj*ldC] + alpha*cc;
+  
+  //#pragma omp parallel for collapse(2) if(M>1 && N>1)
+  for(int i=0; i<M; i++){
+    for(int j=0; j<N; j++){
+    
+     half_float::half c = static_cast<half_float::half>(0.0);
+      for(int k=0; k<K; k++){
+         c = c + A[k+i*ldA]*B[k+j*ldB];     
       }
+      C[i+j*ldC] = beta*C[i+j*ldC] + alpha*c;
+    }
   }
+    
 }
 
 half_float::half mpjd::LinearAlgebra::dot(const int dim, 

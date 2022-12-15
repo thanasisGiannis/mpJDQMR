@@ -90,7 +90,7 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
     class Cholesky {
       public: 
         Cholesky(const int dim, const int nrhs, LinearAlgebra &la_);
-        void QR(const int m, const int n,
+        bool QR(const int m, const int n,
                       std::vector<sfp> &R, const int ldR,
                       std::vector<sfp> &Q, const int ldQ);
         
@@ -100,7 +100,7 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
                                        // cholesky matrix
           
           LinearAlgebra &la;
-          void chol(const int dim, std::vector<sfp> &R, const int ldR);
+          bool chol(const int dim, std::vector<sfp> &R, const int ldR);
     };
     
     int solve_eq(); 
