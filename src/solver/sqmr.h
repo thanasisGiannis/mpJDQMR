@@ -5,6 +5,7 @@
 
 #include "../blasWrappers/blasWrappers.h"
 #include "../matrix/matrix.h"
+#include "../orth/orthProc.h"
 
 namespace mpjd{
 
@@ -70,8 +71,8 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
 	        LinearAlgebra &la_);
     virtual std::vector<fp> solve(int &iters) override;
-  
   private:
+/*  
     class Householder {
       public:
         Householder(int dim, int nrhs, LinearAlgebra &la_);
@@ -102,7 +103,7 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
           LinearAlgebra &la;
           bool chol(const int dim, std::vector<sfp> &R, const int ldR);
     };
-    
+*/    
     int solve_eq(); 
         
     /* sparse matrix vector accumulator */
@@ -151,13 +152,13 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
     LinearAlgebra &la;
     
     // householder orthogonalization provider
-    Householder hh;
+    Householder<sfp> hh;
     /* helping vector for Householder QR */
     std::vector<sfp> hhR;  int ldhhR;        // 2nrhs x nrhs 
     std::vector<sfp> hhQ;  int ldhhQ;        // 2nrhs x nrhs 
        
     // Cholesky orthogonalization provider
-    Cholesky chol;
+    Cholesky<sfp> chol;
 };
 }
 

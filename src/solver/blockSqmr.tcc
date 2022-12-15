@@ -18,8 +18,8 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
 	        : ScaledSQMR<fp,sfp>(mat_, Q_, ldQ_, L_, R_, ldR_, 
 	                             Qlocked_, ldQlocked_, la_)
 	        ,la(la_)
-	        ,hh(Householder( 2*L_->size(), L_->size(), la_ ))
-	        ,chol(Cholesky(mat_.Dim(), L_->size(), la_))  {
+	        ,hh(Householder<sfp>( 2*L_->size(), L_->size(), la_ ))
+	        ,chol(Cholesky<sfp>(mat_.Dim(), L_->size(), la_))  {
 	        
 	        
     auto nrhs = this->L->size();
@@ -574,7 +574,7 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
   return loopNum;
 }
 
-
+#if 0
 template<class fp,class sfp>
 mpjd::BlockScaledSQMR<fp,sfp>::
 Householder::Householder(int dim, int nrhs, LinearAlgebra &la_)
@@ -666,8 +666,10 @@ Householder::QR(int m, int n, std::vector<sfp> &R, int ldR,
   }
   
 }
+#endif
 
 
+#if 0
 template<class fp, class sfp>
 mpjd::BlockScaledSQMR<fp,sfp>::
 Cholesky::Cholesky(const int dim, const int nrhs, LinearAlgebra &la_)
@@ -752,7 +754,7 @@ Cholesky::QR(const int m, const int n,
 
   return true;
 }
-
+#endif
 template<class fp, class sfp>
 std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
   
