@@ -220,8 +220,53 @@ bool mpjd::MGS<fp>::QR(int m, int n, std::vector<fp> &Q, int ldQ,
 
 
 
+template<class fp>
+bool mpjd::MGS<fp>::orth(int m, int n, std::vector<fp> &Q, int ldQ) {
+  /*
+  [~,n] = size(Q);
+  R = zeros(n);
+  for j=1:n
+      r = norm(Q(:,j));
+      Q(:,j) = Q(:,j)/r;
+      for k=j+1:n
+         r = Q(:,j)'*Q(:,k);
+         Q(:,k) = Q(:,k) - r*Q(:,j); 
+      end
+  end
+
+  */
+  for(int j=0; j<n; j++) {
+    fp r = la.nrm2(m,Q.data() + 0 +j*ldQ,1);
+    la.scal(m,static_cast<fp>(1.0)/r,Q.data() + 0 +j*ldQ,1);
+    for(auto k=j+1; k<n; k++) { 
+      r = la.dot(m,Q.data() + 0 +j*ldQ,1,Q.data() + 0 + k*ldQ,1);
+      la.axpy(m, -r, Q.data() + 0 +j*ldQ, 1, Q.data() + 0 + k*ldQ, 1);
+    }
+  } 
+  return true;
+}
 
 
+
+template<class fp>
+bool mpjd::MGS<fp>::orthAgainst(const int m, 
+                     const int nQ, std::vector<fp> &Q, const int ldQ,
+                     const int nW, std::vector<fp> &W, const int ldW) {
+                     
+  /*
+    w = orth(V,w);
+  */
+  
+  for(int i=0; i<nQ; i++) {
+    for(int j=0; j<nW; j++) {
+      // alpha = w(:,j)'*Q(:,i);
+      fp alpha = la.dot(m, W.data()+0+j*ldW, 1, Q.data()+0+i*ldQ, 1);
+      // w(:,j) = w(:,j) - Q(:,i)*alpha;
+      la.axpy(m, -alpha, Q.data()+0+i*ldQ, 1, W.data()+0+j*ldW, 1);
+    }
+  }
+  return true;
+}
 
 
 

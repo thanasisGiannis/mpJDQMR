@@ -400,8 +400,6 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     la.gemm('N', 'N', nrhs, nrhs, nrhs, 
       one, b0.data(), ldb0, vita.data(), ldvita,
       zero, thita.data(), ldthita);
-
-
         
     //ita = a1*d0*vita+b1*alpha;
     //tau_2 = a1*d0 // use of tau_2 is for tmp    

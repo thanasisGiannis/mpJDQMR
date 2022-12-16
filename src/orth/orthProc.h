@@ -43,14 +43,16 @@ class MGS {
     bool QR(const int m, const int n,
                   std::vector<fp> &Q, const int ldQ,
                   std::vector<fp> &R, const int ldR);
+    bool orth(const int m, const int n,
+                  std::vector<fp> &Q, const int ldQ);
     
+    bool orthAgainst(const int m, 
+                     const int nQ, std::vector<fp> &Q, const int ldQ,
+                     const int nW, std::vector<fp> &W, const int ldW);
+                  
     private:      
       LinearAlgebra &la;
 };
 
-
-
 }
-
-
 #include "orthProc.tcc"

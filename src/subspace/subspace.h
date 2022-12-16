@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../matrix/matrix.h"
+#include "../orth/orthProc.h"
 #include "../blasWrappers/blasWrappers.h"
 
 namespace mpjd{
@@ -74,6 +75,7 @@ class Subspace : public basisStatistics {
 	  
 	  Matrix<fp>    &mat;
 	  LinearAlgebra &la;
+	  MGS<fp>       mgs{};
 };
 }
 

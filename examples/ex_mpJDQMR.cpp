@@ -62,17 +62,7 @@ int main() {
 	
 	std::vector<double>     x;//{1,1,1};
 	std::vector<double>     y;//{0,0,0};
-	
-	/*
-	std::shared_ptr<std::vector<double>> Q{}; int ldQ;
-	std::shared_ptr<std::vector<double>> L{}; 
-	std::shared_ptr<std::vector<double>> R{}; int ldR;
-	
-	Q = std::shared_ptr<std::vector<double>>(new std::vector<double>);
-	L = std::shared_ptr<std::vector<double>>(new std::vector<double>);
-	R = std::shared_ptr<std::vector<double>>(new std::vector<double>);
-	*/
-	
+		
 	int    dim{};
 	double norm{};
 	

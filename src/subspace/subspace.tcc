@@ -12,17 +12,16 @@
 template<class fp>
 void init_vec_zeros(std::vector<fp> &v, const int nVals){
 
-	for (auto j=0;j<nVals; j++){
-		v.push_back(static_cast<fp>(0));
-	}
+  v.resize(v.size()+nVals);
+  std::fill(v.end()-nVals,v.end(),0);
+
 } 
 
 template<class fp>
 void init_vec_zeros(std::shared_ptr<std::vector<fp>> v, const int nVals){
 
-	for (auto j=0;j<nVals; j++){
-		v->push_back(static_cast<fp>(0));
-	}
+  v->resize(v->size()+nVals);
+  std::fill(v->end()-nVals,v->end(),0);
 } 
 
 template<class fp>
@@ -51,7 +50,8 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	    dim(dim_),
 	    eigTarget(eigTarget_),
 	    mat(mat_),
-	    la(la_) {
+	    la(la_),
+	    mgs(MGS<fp>(dim,numEvals_*maxBasis_,la_)) {
 
   // subspace basis
 	V.reserve(dim*maxBasis*numEvals); ldV = dim; 
@@ -137,81 +137,19 @@ void mpjd::Subspace<fp>::Subspace_init_direction(){
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_orth_direction(){
 
-	auto VV = static_cast<fp*>(V.data());
-	auto vv = static_cast<fp*>(w->data());
 
-	int rows = dim;
-	int cols = basisSize*blockSize;
-  
-  fp *QQ = static_cast<fp*>(Qlocked->data());
-  // here a locking procedure should take place
-  /* w = orth(Qlocked,w) */
   int numEvalsLocked = static_cast<int>(Llocked->size());
-	for(int k=0; k<3; k++){
-	  for(int j=0; j < blockSize; j++){
-		  for(int i=0; i < numEvalsLocked; i++){
-		      // alpha = Qlocked(i)'v
-				  fp alpha {-la.dot(rows,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1)};
-				  // v = v - Qlocked(i)*alpha
-				  la.axpy(rows,alpha,&QQ[0+i*ldQlocked],1,&vv[0+j*ldV],1); 
-		  }	
-	  }
-  }
-  
-  	
-  VV = static_cast<fp*>(V.data());
-  /* w = orth(V,w) */
-	for(int k=0; k<3; k++){
-	  for(int j=0; j < blockSize; j++){
-		  for(int i=0; i < cols ; i++){
-		      // alpha = V(i)'w
-				  fp alpha {-la.dot(rows,&VV[0+i*ldV],1,&vv[0+j*ldw],1)};
-				  // v = v - V(i)*alpha
-				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&vv[0+j*ldw],1); 
-		  }	
-	  }
-  }
-  
-  
-  /* w = orth(w) */
-  for(auto k=0;k<3;k++){
-	  for(int j=0; j < blockSize; j++){
-		  for(int i=0; i < j ; i++){
-		      // alpha = V(i)'v
-				  auto alpha {-la.dot(rows,&vv[0+i*ldw],1,&vv[0+j*ldV],1)};
-				  // v = v - V(i)*alpha
-				  la.axpy(rows,alpha,&vv[0+i*ldw],1,&vv[0+j*ldV],1);     	
-		  }	
-		  // v = v/norm(v)
-		  auto alpha {la.nrm2(rows,&vv[0+j*ldw],1)}	;
-		  la.scal(dim,static_cast<fp>(1.0/alpha),&vv[0+j*ldw],1);    
-	  }
-	}  
+	mgs.orthAgainst(dim, numEvalsLocked, *Qlocked, ldQlocked, blockSize, *w, ldw);
+	mgs.orthAgainst(dim, basisSize*blockSize, V, ldV, blockSize, *w, ldw);
+  mgs.orth(dim,blockSize,*w,ldw);
+
 	updateOrthogonalizations(1);
 }
 
 template<class fp>
 void mpjd::Subspace<fp>::Subspace_orth_basis(){
 
-  auto VV = static_cast<fp*>(V.data());
-
-	int rows = dim;
-	int cols = basisSize*numEvals;
-
-  /* V = orth(V) */
-  for(int k=0; k<3; k++){
-	  for(int j=0; j < cols; j++){
-		  for(int i=0; i < j ; i++){
-		      // alpha = V(i)'v
-				  auto alpha {-la.dot(rows,&VV[0+i*ldV],1,&VV[0+j*ldV],1)};
-				  // v = v - V(i)*alpha
-				  la.axpy(rows,alpha,&VV[0+i*ldV],1,&VV[0+j*ldV],1); 
-		  }	
-		  // v = v/norm(v)
-		  auto alpha {la.nrm2(rows,&VV[0+j*ldV],1)}	;
-		  la.scal(dim,static_cast<fp>(1.0/alpha),&VV[0+j*ldV],1);    
-	  }
-	}
+  mgs.orth(dim,basisSize*numEvals,V,ldV);	
 	updateOrthogonalizations(1);
 }
 
@@ -305,10 +243,12 @@ void mpjd::Subspace<fp>::Subspace_projected_mat_eig(){
 	fp one  = static_cast<fp>(1.0);
 	fp zero = static_cast<fp>(0.0);
 	
+	
 	Qprev = *Q;
-
+  
 	la.gemm('N', 'N',dim, blockSize, basisSize*blockSize,
 	    one, V.data() , ldV, q.data() , ldq, zero, Q->data() , ldQ);
+
 }
 
 template<class fp>
