@@ -1,3 +1,6 @@
+#define UNUSED(expr) static_cast<void>(expr)
+
+
 template<class fp>
 mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, 
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
@@ -11,10 +14,11 @@ mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_,
       mat(mat_){}
 	
 template<class fp>
-std::vector<fp> mpjd::SQMR<fp>::solve(int &iters){
+void mpjd::SQMR<fp>::solve(std::vector<fp>& XX, int ldXX, int &iters) {
 
+  UNUSED(XX);  
+  UNUSED(ldXX);
   iters = 0;
-  return *R; // this is for testing purpose
 }
 
 template<class fp,class sfp>
@@ -40,7 +44,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_,
     sR.insert(sR.begin(),sR.capacity(),static_cast<sfp>(0.0));
     
 
-    XX.reserve(this->R->capacity()); 
+    //XX.reserve(this->R->capacity()); 
     
     /* lower precision data area */
     x.reserve(mat->Dim());                    
@@ -66,8 +70,9 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_,
       
 
 template<class fp, class sfp>
-std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
+void mpjd::ScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, int &iters) {
   
+  UNUSED(ldXX);
   /* Casting input matrices into the inner loop precision */ 
   auto to_sfp = [](const fp d){return static_cast<sfp>(d);};
   auto to_fp  = [](const sfp d){return static_cast<fp>(d);};
@@ -120,7 +125,7 @@ std::vector<fp> mpjd::ScaledSQMR<fp,sfp>::solve(int &iters){
   }
   // DR = D\R
   mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L->size()); 
-  return XX;
+  //return XX;
 }
 
 template<class fp, class sfp>

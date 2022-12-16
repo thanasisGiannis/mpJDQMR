@@ -17,7 +17,7 @@ class SQMR {
 	        std::shared_ptr<std::vector<fp>> L_,
 	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_);
-	  virtual std::vector<fp> solve(int &iters);
+	  virtual void solve(std::vector<fp>& XX, int ldXX, int &iters);
 
   protected:
     LinearAlgebra   la;
@@ -38,7 +38,7 @@ class ScaledSQMR : public SQMR<fp> {
 	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
 	        LinearAlgebra &la_);
-	  virtual std::vector<fp> solve(int &iters);
+	  virtual void solve(std::vector<fp>& XX, int ldXX, int &iters);
 
   protected:
     int solve_eq();
@@ -70,7 +70,7 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
 	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
 	        LinearAlgebra &la_);
-    virtual std::vector<fp> solve(int &iters) override;
+    virtual void solve(std::vector<fp>& XX, int ldXX, int &iters) override;
   private:
     int solve_eq(); 
         

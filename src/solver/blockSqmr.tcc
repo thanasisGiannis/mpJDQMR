@@ -754,7 +754,7 @@ Cholesky::QR(const int m, const int n,
 }
 #endif
 template<class fp, class sfp>
-std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
+void mpjd::BlockScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, int &iters) {
   
  
   auto& mat      = this->mat;
@@ -764,12 +764,12 @@ std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
   auto& sQ       = this->sQ; auto ldsQ = this->ldsQ;
   auto& sQlocked = this->sQlocked;  
   auto& R        = this->R; auto ldR = this->ldR;
-  auto& XX       = this->XX;
+  //auto& XX       = this->XX;
   
   int dim      = mat->Dim();
   int numEvals = static_cast<int>(this->L->size());
   
-  
+  UNUSED(ldXX);
   UNUSED(R);
   UNUSED(ldsQ);
   
@@ -830,7 +830,7 @@ std::vector<fp> mpjd::BlockScaledSQMR<fp,sfp>::solve(int &iters){
   mat->applyScalInvMat(XX.data(),mat->Dim(),mat->Dim(),this->L->size()); 
 
 
-  return XX;
+  //return XX;
 }
 
 

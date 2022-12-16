@@ -28,7 +28,7 @@ std::tuple<std::vector<fp>,std::vector<fp>,std::vector<fp>>
     
     innerIters=0;
     //	w = (I-QlockedQlocked')(I-QQ')(A-L)(I-QlockedQlocked')(I-QQ')\R
-    *w = sqmr->solve(innerIters);                
+    sqmr->solve(*w, dim, innerIters);                
     //*w = *R;
     
    	updateNumInnerLoop(innerIters);             // statistics
