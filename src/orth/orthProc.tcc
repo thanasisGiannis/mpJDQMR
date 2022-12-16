@@ -1,4 +1,5 @@
 #include <cmath>
+#include <omp.h>
 
 #define UNUSED(expr) static_cast<void>(expr)
 
@@ -20,7 +21,6 @@ bool mpjd::Cholesky<fp>::chol(const int n, std::vector<fp> &L, int ldL) {
   
   // L = zeros(n);
   std::fill(L.begin(), L.end(), static_cast<fp>(0.0));
-
 /*
   [n,~] = size(A);
   for j=1:n
@@ -257,8 +257,9 @@ bool mpjd::MGS<fp>::orthAgainst(const int m,
     w = orth(V,w);
   */
   
-  for(int i=0; i<nQ; i++) {
-    for(int j=0; j<nW; j++) {
+  #pragma omp parallel for 
+  for(int j=0; j<nW; j++) {
+    for(int i=0; i<nQ; i++) {
       // alpha = w(:,j)'*Q(:,i);
       fp alpha = la.dot(m, W.data()+0+j*ldW, 1, Q.data()+0+i*ldQ, 1);
       // w(:,j) = w(:,j) - Q(:,i)*alpha;

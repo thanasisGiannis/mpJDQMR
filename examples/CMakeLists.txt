@@ -15,7 +15,7 @@ target_link_directories(ex_mpJDQMR PUBLIC "${MKLROOT}/lib/intel64")
 
 
 
-target_link_libraries(ex_mpJDQMR PUBLIC
+target_link_libraries(ex_mpJDQMR PUBLIC OpenMP::OpenMP_CXX 
 											-lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core 
 											-lmkl_blacs_intelmpi_ilp64 -lgomp -lpthread -lm -ldl
 											libmpjdqmr.so

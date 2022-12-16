@@ -72,38 +72,6 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
 	        LinearAlgebra &la_);
     virtual std::vector<fp> solve(int &iters) override;
   private:
-/*  
-    class Householder {
-      public:
-        Householder(int dim, int nrhs, LinearAlgebra &la_);
-        void QR(int m, int n, std::vector<sfp> &R, int ldR, 
-              std::vector<sfp> &Q, int ldQ);
-      
-      private:
-        std::vector<sfp> hhQz; int ldhhQz;
-        std::vector<sfp> hhx;                    // dim x 1
-        std::vector<sfp> hhv;                    // dim x 1     
-        std::vector<sfp> hhu;                    //  nrhs x 1     
-        std::vector<sfp> hhvhhvt; int ldhhvhhvt; // dim x dim     
-        LinearAlgebra &la;
-    };
-    
-    class Cholesky {
-      public: 
-        Cholesky(const int dim, const int nrhs, LinearAlgebra &la_);
-        bool QR(const int m, const int n,
-                      std::vector<sfp> &R, const int ldR,
-                      std::vector<sfp> &Q, const int ldQ);
-        
-        private:
-          std::vector<sfp> B; int ldB; // this vector will be used
-                                       // to create upper triangular 
-                                       // cholesky matrix
-          
-          LinearAlgebra &la;
-          bool chol(const int dim, std::vector<sfp> &R, const int ldR);
-    };
-*/    
     int solve_eq(); 
         
     /* sparse matrix vector accumulator */
