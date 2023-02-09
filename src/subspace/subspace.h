@@ -30,7 +30,7 @@ class Subspace : public basisStatistics {
 	  void Subspace_eig_residual();
 	  bool Check_Convergence_and_lock(fp eigenTol, bool lock);
     
-    void Subspace_Check_size_and_restart();
+      void Subspace_Check_size_and_restart();
     
 	  int getBasisSize();
 	  int getMaxBasisSize();

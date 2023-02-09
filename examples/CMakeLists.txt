@@ -6,7 +6,6 @@ set(SRC ex_mpJDQMR.cpp)
 
 
 add_executable(ex_mpJDQMR ${SRC})
-#set_target_properties(ex_mpJDQMR PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 set_target_properties(ex_mpJDQMR PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 target_include_directories(ex_mpJDQMR PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
