@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_definitions(-std=c++14)
+add_definitions(-std=c++2a)
 project(mpJDQMR)
 
 if(NOT CMAKE_BUILD_TYPE)
 #  set(CMAKE_BUILD_TYPE Release)
 endif()
+
+
+#set(CMAKE_C_COMPILER gcc-10)
+#set(CMAKE_CXX_COMPILER g++-10)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g3")

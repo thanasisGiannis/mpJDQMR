@@ -15,15 +15,16 @@ class SQMR {
 	  SQMR() = delete;
 	  SQMR(Matrix<fp> &mat_, std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
 	        std::shared_ptr<std::vector<fp>> L_,
-	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+	        //std::shared_ptr<std::vector<fp>> R_, int &ldR_,
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_);
-	  virtual void solve(std::vector<fp>& XX, int ldXX, int &iters);
+	  virtual void solve(std::vector<fp>& XX, int ldXX, 
+	                     std::vector<fp>& R, int ldR, int &iters);
 
   protected:
     LinearAlgebra   la;
 	  std::shared_ptr<std::vector<fp>> Q; int &ldQ; // Ritz vectors
 	  std::shared_ptr<std::vector<fp>> L;           // Ritz values
-	  std::shared_ptr<std::vector<fp>> R;       int &ldR;       // Residual vector
+	  //std::shared_ptr<std::vector<fp>> R;       int &ldR;       // Residual vector
 	  std::shared_ptr<std::vector<fp>> Qlocked; int &ldQlocked; // Locked Ritz vectors
 	  Matrix<fp>      &mat;                     // Coefficient Matrix
 };
@@ -35,11 +36,11 @@ class ScaledSQMR : public SQMR<fp> {
 	  ScaledSQMR() = delete;
 	  ScaledSQMR(Matrix<fp> &mat_, std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
 	        std::shared_ptr<std::vector<fp>> L_, 
-	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+	        //std::shared_ptr<std::vector<fp>> R_, int &ldR_,
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
 	        LinearAlgebra &la_);
-	  virtual void solve(std::vector<fp>& XX, int ldXX, int &iters);
-
+	  virtual void solve(std::vector<fp>& XX, int ldXX, 
+	                     std::vector<fp>& R, int ldR, int &iters);
   protected:
     int solve_eq();
 
@@ -67,10 +68,12 @@ class BlockScaledSQMR : public ScaledSQMR<fp,sfp> {
     BlockScaledSQMR() = delete;
     BlockScaledSQMR(Matrix<fp> &mat_, std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
 	        std::shared_ptr<std::vector<fp>> L_, 
-	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+	        //std::shared_ptr<std::vector<fp>> R_, int &ldR_,
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
 	        LinearAlgebra &la_);
-    virtual void solve(std::vector<fp>& XX, int ldXX, int &iters) override;
+    virtual void solve(std::vector<fp>& XX, int ldXX, 
+	                     std::vector<fp>& R, int ldR, int &iters) override;
+	                     
   private:
     int solve_eq(); 
         

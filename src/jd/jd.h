@@ -69,10 +69,10 @@ class JD : public basisStatistics, public jdStatistics {
 	  std::shared_ptr<std::vector<fp>> Rlocked; int ldRlocked;  
 
 	  /* CAUTION THIS SHOULD BE AFTER VARIABLES */
-	  LinearAlgebra      la;
-	  Matrix<fp>         mat;
-	  std::unique_ptr<Subspace<fp>>   basis; // implement after basis implementation
-	  std::unique_ptr<SQMR<fp>>       sqmr;  // implement after s implementation
+	  LinearAlgebra      la{};
+	  Matrix<fp>         mat{};
+	  std::unique_ptr<Subspace<fp>>   basis{}; // implement after basis implementation
+	  std::unique_ptr<SQMR<fp>>       sqmr{};  // implement after s implementation
 };
 }
 

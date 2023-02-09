@@ -5,19 +5,22 @@ template<class fp>
 mpjd::SQMR<fp>::SQMR(Matrix<fp> &mat_, 
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
     std::shared_ptr<std::vector<fp>> L_, 
-    std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+    //std::shared_ptr<std::vector<fp>> R_, int &ldR_,
     std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_)
     : Q{Q_}, ldQ(ldQ_),
       L{L_},
-      R{R_}, ldR(ldR_),
+      //R{R_}, ldR(ldR_),
       Qlocked{Qlocked_}, ldQlocked(ldQlocked_),
       mat(mat_){}
 	
 template<class fp>
-void mpjd::SQMR<fp>::solve(std::vector<fp>& XX, int ldXX, int &iters) {
+void mpjd::SQMR<fp>::solve(std::vector<fp>& XX, int ldXX, 
+	                     std::vector<fp>& R, int ldR, int &iters)  {
 
   UNUSED(XX);  
   UNUSED(ldXX);
+  UNUSED(R);
+  UNUSED(ldR);
   iters = 0;
 }
 
@@ -25,10 +28,10 @@ template<class fp,class sfp>
 mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_, 
     std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
     std::shared_ptr<std::vector<fp>> L_, 
-    std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+    //std::shared_ptr<std::vector<fp>> R_, int &ldR_,
     std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_,
     LinearAlgebra &la_) 
-    : SQMR<fp>(mat_,Q_,ldQ_,L_,R_,ldR_,Qlocked_,ldQlocked_),
+    : SQMR<fp>(mat_,Q_,ldQ_,L_,/*R_,ldR_,*/Qlocked_,ldQlocked_),
       mat(new ScaledMatrix<fp,sfp>(mat_)),
       la(la_){
     
@@ -40,7 +43,7 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_,
     sQlocked.reserve(this->Qlocked->capacity()); ldsQlocked = ldQlocked_; 
     sQlocked.insert(sQlocked.begin(),sQlocked.capacity(),static_cast<sfp>(0.0));
     
-	  sR.reserve(mat->Dim()); ldsR = this->ldR;
+	  sR.reserve(mat->Dim()); ldsR = mat_.Dim(); //this->ldR;
     sR.insert(sR.begin(),sR.capacity(),static_cast<sfp>(0.0));
     
 
@@ -70,7 +73,8 @@ mpjd::ScaledSQMR<fp,sfp>::ScaledSQMR(Matrix<fp> &mat_,
       
 
 template<class fp, class sfp>
-void mpjd::ScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, int &iters) {
+void mpjd::ScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, 
+	                     std::vector<fp>& R, int ldR, int &iters) {
   
   UNUSED(ldXX);
   /* Casting input matrices into the inner loop precision */ 
@@ -89,8 +93,8 @@ void mpjd::ScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, int &iters) 
   /* clear previous solution */
   XX.clear();
   
-  auto iDR  = this->R;
-  int ldiDR = this->ldR;
+  auto iDR  = &R;// this->R;
+  int ldiDR = ldR; //this->ldR;
   /* Call the actual solver */
   int numEvals = static_cast<int>(this->L->size());
   for(auto i=0; i < numEvals; i++){

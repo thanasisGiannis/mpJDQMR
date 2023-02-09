@@ -5,6 +5,7 @@
 #include <vector>
 #include <iterator>
 
+
 #include <omp.h>
 
 #include "../blasWrappers/blasWrappers.h"
@@ -123,7 +124,7 @@ void mpjd::Subspace<fp>::Subspace_init_direction(){
 	/*
 		Initialize basis w with random vals
 	*/
-	
+/*	
 	std::random_device rand_dev;
 	std::mt19937 			 generator(rand_dev());
 	std::uniform_int_distribution<int> distr(-100,100);
@@ -131,6 +132,9 @@ void mpjd::Subspace<fp>::Subspace_init_direction(){
 	for(auto i=0;i<dim*numEvals;i++){
 		w->push_back(static_cast<fp>(distr(generator))/static_cast<fp>(100));
 	}
+*/
+  w->resize(dim*numEvals);
+	std::generate(w->begin(), w->end(), std::rand);
 }
 
 

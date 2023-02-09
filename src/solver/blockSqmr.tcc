@@ -12,10 +12,10 @@ template<class fp,class sfp>
 mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_, 
           std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
 	        std::shared_ptr<std::vector<fp>> L_, 
-	        std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+	        //std::shared_ptr<std::vector<fp>> R_, int &ldR_,
 	        std::shared_ptr<std::vector<fp>> Qlocked_, int &ldQlocked_, 
 	        LinearAlgebra &la_) 
-	        : ScaledSQMR<fp,sfp>(mat_, Q_, ldQ_, L_, R_, ldR_, 
+	        : ScaledSQMR<fp,sfp>(mat_, Q_, ldQ_, L_, /*R_, ldR_,*/ 
 	                             Qlocked_, ldQlocked_, la_)
 	        ,la(la_)
 	        ,hh(Householder<sfp>( 2*L_->size(), L_->size(), la_ ))
@@ -42,7 +42,7 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
     /*
       solving A*XX = -R;
     */
-    this->XX.reserve(this->R->capacity()); // output of full precision
+   // this->XX.reserve(this->R->capacity()); // output of full precision
     
     
     /* lower precision data area 
@@ -51,7 +51,7 @@ mpjd::BlockScaledSQMR<fp,sfp>::BlockScaledSQMR(Matrix<fp> &mat_,
     */
     this->x.reserve(dim*nrhs); ldx = dim;                                             
     this->x.insert(this->x.begin(),this->x.capacity(),static_cast<sfp>(0.0)); 
-    this->sR.reserve(dim*nrhs); this->ldsR = this->ldR;          
+    this->sR.reserve(dim*nrhs); this->ldsR = dim; //this->ldR;          
     this->sR.insert(this->sR.begin(),this->sR.capacity(),static_cast<sfp>(0.0));  
 
 
@@ -754,7 +754,8 @@ Cholesky::QR(const int m, const int n,
 }
 #endif
 template<class fp, class sfp>
-void mpjd::BlockScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, int &iters) {
+void mpjd::BlockScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, 
+	                     std::vector<fp>& R, int ldR, int &iters) {
   
  
   auto& mat      = this->mat;
@@ -763,7 +764,7 @@ void mpjd::BlockScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, int &it
   auto& x        = this->x;
   auto& sQ       = this->sQ; auto ldsQ = this->ldsQ;
   auto& sQlocked = this->sQlocked;  
-  auto& R        = this->R; auto ldR = this->ldR;
+//  auto& R        = this->R; auto ldR = this->ldR;
   //auto& XX       = this->XX;
   
   int dim      = mat->Dim();
@@ -787,8 +788,8 @@ void mpjd::BlockScaledSQMR<fp,sfp>::solve(std::vector<fp>& XX, int ldXX, int &it
       sQlocked.begin(),to_sfp);
 
   /* clear previous solution */
-  auto iDR  = this->R;
-  int ldiDR = this->ldR;
+  auto iDR  = &R;  //this->R;
+  int  ldiDR = ldR; //this->ldR;
   
   XX.clear();
   sR.clear();   
