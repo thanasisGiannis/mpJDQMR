@@ -420,7 +420,6 @@ void mpjd::LinearAlgebra::gemmAB(const int M, const int N, const int K,
     }
   }
 
-
 }						
 void mpjd::LinearAlgebra::gemmATB(const int M, const int N, const int K,
     const half_float::half alpha, const half_float::half* A, const int ldA,
@@ -430,7 +429,6 @@ void mpjd::LinearAlgebra::gemmATB(const int M, const int N, const int K,
   /* 
     Both A and B are accessed by column major 
     dot products should be cache efficient
-    using simd and reduction in order to accelerate
   */
   
   //#pragma omp parallel for collapse(2) if(M>1 && N>1)
@@ -447,26 +445,25 @@ void mpjd::LinearAlgebra::gemmATB(const int M, const int N, const int K,
     
 }
 
+
 half_float::half mpjd::LinearAlgebra::dot(const int dim, 
     const half_float::half *x, const int incx,
     const half_float::half *y, const int incy) {
 
-  half_float::half res=static_cast<half_float::half>(0.0);
-  #pragma omp simd reduction(+:res)
+  half_float::half res = static_cast<half_float::half>(0.0);
+  #pragma omp parallel for reduction(+:res) num_threads(256)
   for (int i = 0; i < dim; i++) {
     res += x[i*incx]*y[i*incy];
   }
-
   return res;
 }
 
 void mpjd::LinearAlgebra::axpy(const int dim, const half_float::half alpha, 
     const half_float::half *x, const int incx, 
     half_float::half *y, const int incy) {
-    
-  //y = y + alpha * x
-  #pragma omp simd
-  for(int i=0;i<dim;i++){
+
+  #pragma omp parallel for num_threads(256)
+		for(int i=0;i<dim;i++){
       y[i*incy] += alpha*x[i*incx];
   }
 }
@@ -474,6 +471,13 @@ void mpjd::LinearAlgebra::axpy(const int dim, const half_float::half alpha,
 half_float::half mpjd::LinearAlgebra::nrm2(const int dim, 
     const half_float::half *x, const int incx) { 
 
+		/*
+				This is not the proper way to calculate nrm2
+				This is prone to some bad floating point arithmetic errors
+				Need a better algorithm. This maybe a problem to the fast convergance 
+				of some algorithms 
+				Calculated norm does not approach the actual value by fp error standards
+		 */
   half_float::half res = dot(dim, x, incx, x, incx);
   return half_float::sqrt(res);
 }
@@ -481,39 +485,43 @@ half_float::half mpjd::LinearAlgebra::nrm2(const int dim,
 void mpjd::LinearAlgebra::scal(const int dim, const half_float::half alpha, 
     half_float::half *x, const int incx) {
 
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(256)
   for (int i = 0; i < dim; i++) {
       x[i*incx] *= alpha;
   }
 }
-
 
 void mpjd::LinearAlgebra::geam(const char transa, const char transb,
           int m, int n,
           const half_float::half  alpha, const half_float::half *A, int lda,
           const half_float::half  beta, const half_float::half *B, int ldb,
           half_float::half *C, int ldc) {
+		static int blockI = 8;
+		static int blockJ = 8;
 
   if( transa == 'N' && transb == 'N') {
   
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(2) num_threads(256)
     for (int i=0; i<m; i++) {
       for (int j=0; j<n; j++) {
           C[i+j*ldc] = alpha*A[i+j*lda] + beta*B[i+j*ldb];
       }
     }
   } else if(transa == 'T' && transb == 'N' ) {
-
-    #pragma omp parallel for collapse(2)
-    for (int i=0; i<m; i++) {
-      for (int j=0; j<n; j++) {
-          C[i+j*ldc] = alpha*A[j+i*lda] + beta*B[i+j*ldb];
+				
+    #pragma omp parallel for collapse(2) num_threads(256)
+    for (int i=0; i<m; i+=blockI) {
+      for (int j=0; j<n; j+=blockJ) {
+								for(int ii=0; ii<blockI && i+ii<m; ii++) {
+										for(int jj=0; jj<blockJ && j+jj<n; jj++) {
+													C[i+ii+(j+jj)*ldc] = alpha*A[(j+jj)+(i+ii)*lda] + beta*B[i+ii+(j+jj)*ldb];
+										}
+								}
       }
     }
-  
   } else if (transa == 'N' && transb == 'T' ) {
 
-    #pragma omp parallel for collapse(2)
+    #pragma omp parallel for collapse(2) num_threads(256)
     for (int i=0; i<m; i++) {
       for (int j=0; j<n; j++) {
           C[i+j*ldc] = alpha*A[i+j*lda] + beta*B[j+i*ldb];
@@ -521,9 +529,9 @@ void mpjd::LinearAlgebra::geam(const char transa, const char transb,
     }
   } else if (transa == 'T' && transb == 'T' ) {
 
-    #pragma omp parallel for collapse(2)
-    for (int i=0; i<m; i++) {
-      for (int j=0; j<n; j++) {
+    #pragma omp parallel for collapse(2) num_threads(256)
+    for (int j=0; j<n; j++) {
+    		for (int i=0; i<m; i++) {
           C[i+j*ldc] = alpha*A[j+i*lda] + beta*B[j+i*ldb];
       }
     }

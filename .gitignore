@@ -1,8 +1,9 @@
 gitHubToken
-lib/*
 build/*
 matrices/*
 examples/bin/*
+tests/*
+lib/*.so
 *.cflags
 *.config
 *.creator
@@ -11,3 +12,4 @@ examples/bin/*
 *.includes
 *.so
 *.vscode/*
+
