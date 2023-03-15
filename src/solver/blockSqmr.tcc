@@ -1,9 +1,4 @@
-/*
- * TODO: use optimal stopping criteria
- * TODO: faster initialization of the vectors 
- */  
 #include <cmath>
-
 
 #define UNUSED(expr) static_cast<void>(expr)
 
