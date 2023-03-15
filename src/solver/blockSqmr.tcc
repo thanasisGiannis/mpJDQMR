@@ -531,10 +531,8 @@ int mpjd::BlockScaledSQMR<fp,sfp>::solve_eq(){
     for(int i=0; i<nrhs; i++) {
       nrm2_prev = nrm2;
       nrm2 = la.nrm2(dim, sR.data() + 0+i*ldsR, 1); 
-      //std::cout << i+1 << " "<<  nrm2 << std::endl;
-      // TODO:  at this point we need to implement stopping criteria
-      //        based on optimal convergence of jacobi davidson 
-      if (nrm2 < 1e-01 || std::abs(nrm2-nrm2_prev)/std::abs(nrm2) < 1e-01 ) {
+      // if we get a digit of precision that is enough
+      if (nrm2 < 5e-01 ) {
         nConv++;
       }
     }
