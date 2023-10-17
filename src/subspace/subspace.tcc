@@ -54,10 +54,10 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	    la(la_),
 	    mgs(MGS<fp>(dim,numEvals_*maxBasis_,la_)) {
 
-  // subspace basis
-	V.reserve(dim*maxBasis*numEvals); ldV = dim; 
+    // subspace basis
+    V.reserve(dim*maxBasis*numEvals); ldV = dim;
 
-  // projected matrix
+    // projected matrix
 	T.reserve(maxBasis*numEvals*maxBasis*numEvals); ldT = maxBasis*numEvals;
 	init_vec_zeros(T,maxBasis*numEvals*maxBasis*numEvals);
 	
@@ -69,19 +69,19 @@ mpjd::Subspace<fp>::Subspace(Matrix<fp> &mat_, const int dim_,
 	qq.reserve(maxBasis*numEvals*maxBasis*numEvals); ldqq = maxBasis*numEvals; 
 	init_vec_zeros(qq,maxBasis*numEvals*maxBasis*numEvals);
 
-  // buffer for syev
+    // buffer for syev
 	LL.reserve(maxBasis*numEvals); 
 	init_vec_zeros(LL,maxBasis*numEvals);
 
-  // locked eigenvectors
+    // locked eigenvectors
 	Q->reserve(dim*numEvals); ldQ = dim; 
 	init_vec_zeros(Q,dim*numEvals);
 
-  // locked eigenvectors
-  Qprev.reserve(dim*numEvals); ldQprev = dim; 
+    // locked eigenvectors
+    Qprev.reserve(dim*numEvals); ldQprev = dim;
 	init_vec_zeros(Qprev,dim*numEvals);
 
-  // locked eigenvalues
+    // locked eigenvalues
 	L->reserve(numEvals); 				        
 	init_vec_zeros(L,numEvals);
 
