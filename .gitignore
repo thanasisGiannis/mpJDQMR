@@ -3,7 +3,7 @@ build/*
 matrices/*
 examples/bin/*
 tests/*
-lib/*.so
+lib/libmpjdqmr.so
 *.cflags
 *.config
 *.creator
