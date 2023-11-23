@@ -27,52 +27,54 @@ struct mpjdParam {
 template<class fp, class sfp>
 class JD : public basisStatistics, public jdStatistics {
 
-  public:
-	  JD() = delete;
-	  JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
-			  int dim_, sparseDS_t DS_, 
-			  /*
-			  std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
-			  std::shared_ptr<std::vector<fp>> L_, 
-			  std::shared_ptr<std::vector<fp>> R_, int &ldR_, 
-			  */
-			  fp norm_, struct mpjdParam &params); 
+    public:
+        JD() = delete;
+        JD(std::vector<fp> vals_, std::vector<int> row_index_, std::vector<int> col_index_,
+              int dim_, sparseDS_t DS_,
+              /*
+              std::shared_ptr<std::vector<fp>> Q_, int &ldQ_,
+              std::shared_ptr<std::vector<fp>> L_,
+              std::shared_ptr<std::vector<fp>> R_, int &ldR_,
+              */
+              fp norm_, struct mpjdParam &params);
 
-	  std::tuple<std::vector<fp>,std::vector<fp>,std::vector<fp>> solve();									 
+        std::tuple<std::vector<fp>,std::vector<fp>,std::vector<fp>> solve();
 
-  private:	
-	  bool Check_Convergence();
-	  void printIterationStats(const int loopIter);
+    private:
+        bool Check_Convergence();
+        void printIterationStats(const int loopIter);
 
-    eigenTarget_t  eigTarget; // Smallest by absolute value 
-	  struct mpjdParam &parameters;
-	  
-	  int 					 maxIters;
-	  int						 dim;
-	  fp						 tol;
-	  
-	  /* Shared variables between classes */
-	  std::shared_ptr<std::vector<fp>> w; int ldw;  // common with basis and sqmr
-															                    // next subspace direction
-														                      // reserved at subspace class
-														                      // will need to be used 
-														                      // by inner solver
-		
-		// common with basis and sqmr												    
-	  std::shared_ptr<std::vector<fp>> Q; int ldQ; // common with basis and sqmr
-	  std::shared_ptr<std::vector<fp>> L;          // common with basis and sqmr
-	  std::shared_ptr<std::vector<fp>> R; int ldR; // common with basis and sqmr
+        eigenTarget_t  eigTarget; // Smallest by absolute value
+        struct mpjdParam &parameters;
 
-    // common with basis and sqmr
-	  std::shared_ptr<std::vector<fp>> Qlocked; int ldQlocked;  
-	  std::shared_ptr<std::vector<fp>> Llocked; 								
-	  std::shared_ptr<std::vector<fp>> Rlocked; int ldRlocked;  
+        int 					 maxIters;
+        int						 dim;
+        fp						 tol;
 
-	  /* CAUTION THIS SHOULD BE AFTER VARIABLES */
-	  LinearAlgebra      la{};
-	  Matrix<fp>         mat{};
-	  std::unique_ptr<Subspace<fp>>   basis{}; // implement after basis implementation
-	  std::unique_ptr<SQMR<fp>>       sqmr{};  // implement after s implementation
+        /* Shared variables between classes */
+        std::shared_ptr<std::vector<fp>> w; int ldw;// common with basis
+                                                    // and sqmr
+                                                    // next subspace direction
+                                                    // reserved at
+                                                    // subspace class
+                                                    // will need to be used
+                                                    // by inner solver
+
+        // common with basis and sqmr
+        std::shared_ptr<std::vector<fp>> Q; int ldQ; // common with basis and sqmr
+        std::shared_ptr<std::vector<fp>> L;          // common with basis and sqmr
+        std::shared_ptr<std::vector<fp>> R; int ldR; // common with basis and sqmr
+
+        // common with basis and sqmr
+        std::shared_ptr<std::vector<fp>> Qlocked; int ldQlocked;
+        std::shared_ptr<std::vector<fp>> Llocked;
+        std::shared_ptr<std::vector<fp>> Rlocked; int ldRlocked;
+
+        /* CAUTION THIS SHOULD BE AFTER VARIABLES */
+        LinearAlgebra      la{};
+        Matrix<fp>         mat{};
+        std::unique_ptr<Subspace<fp>>   basis{}; // implement after basis implementation
+        std::unique_ptr<SQMR<fp>>       sqmr{};  // implement after s implementation
 };
 }
 
